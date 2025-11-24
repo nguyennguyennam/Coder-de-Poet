@@ -9,7 +9,7 @@ function App() {
     // - PC (từ md trở lên): md:flex-row (Sidebar bên trái, Content bên phải)
     // 
     // Các lớp khác của bạn cũng được áp dụng theo tiền tố md:
-    <div className="flex flex-col md:flex-row md:items-center min-h-screen md:h-screen md:gap-[30px] md:px-5 bg-[#F9F8F6]">
+    <div className="flex flex-col md:flex-row md:items-center min-h-screen md:h-screen md:gap-[30px] md:px-5 bg-[color(var(--bg-color))] text-[color(var(--text-color))]">
       
       {/* === PHẦN ĐIỀU HƯỚNG (NAVIGATION) === */}
 

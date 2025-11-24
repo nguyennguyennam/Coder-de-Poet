@@ -16,3 +16,11 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+root {
+  --bg-color: #F9F8F6;
+  --text-color: #333333;
+  --primary-color: #EFE9E3;
+  --secondary-color: #C9B59C;
+  --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}

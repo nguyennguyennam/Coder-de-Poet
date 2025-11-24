@@ -26,7 +26,7 @@ export default function Navigation_PC() {
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="flex items-center justify-center text-[#000] hover:text-indigo-600 bg-white
-                         rounded-2xl border border-gray-300  hover:border-indigo-300 
+                         rounded-2xl border border-gray-300  hover:border-[#ccc]
                          transition-all duration-200"
             >
               <i className="bx bx-menu text-[calc(16px_+_2vw)] p-1"></i>
@@ -49,7 +49,7 @@ export default function Navigation_PC() {
           <div className="w-[calc(16px_+_3vw)] h-[calc(16px_+_3vw)] rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold 
                           flex items-center justify-center text-sm transition-colors">
             <img
-            src="https://scontent.fsgn2-3.fna.fbcdn.net/v/t39.30808-1/537187856_1444879253437802_3963755224737322732_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=L7OzKlm4yxwQ7kNvwFpE3nB&_nc_oc=Adk-URB0xXkMOoRZRxJKF_yd0nOSjiabcU1vXTkzvkYxHbewcqHrZGgwyYIcIKBAo0c&_nc_zt=24&_nc_ht=scontent.fsgn2-3.fna&_nc_gid=wzfftZI3TpNEWd6-9lQRXw&oh=00_AfiGppeoDDWfCczl-zVpycPpuwCD3VNo1FH5buw2-f4Hlw&oe=691F7CCC"
+            src="https://scontent.fsgn8-4.fna.fbcdn.net/v/t39.30808-1/537187856_1444879253437802_3963755224737322732_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=h5x2ZoWUPDgQ7kNvwFjlLWm&_nc_oc=AdlIokzGZDGz20b0LR4Xr8BzbBHKkDgtRvlEkJAWGYFRElnaZs0y_E-UQXgBxqOsm_w&_nc_zt=24&_nc_ht=scontent.fsgn8-4.fna&_nc_gid=V61kKF67TVY76pnDq_ppyQ&oh=00_AfjeqQhAAnrdM3ddp4W9eIVkTFAcS0XSpZKJFyYrh_EwpQ&oe=692765CC"
             alt="logo"
             className="object-contain rounded-lg"
           />

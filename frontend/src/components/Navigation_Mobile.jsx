@@ -136,11 +136,9 @@ export default function Navigation_Mobile() {
 
           <li>
 
-            <img
-
-              src="https://scontent.fsgn2-3.fna.fbcdn.net/v/t39.30808-1/537187856_1444879253437802_3963755224737322732_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=L7OzKlm4yxwQ7kNvwFpE3nB&_nc_oc=Adk-URB0xXkMOoRZRxJKF_yd0nOSjiabcU1vXTkzvkYxHbewcqHrZGgwyYIcIKBAo0c&_nc_zt=24&_nc_ht=scontent.fsgn2-3.fna&_nc_gid=wzfftZI3TpNEWd6-9lQRXw&oh=00_AfiGppeoDDWfCczl-zVpycPpuwCD3VNo1FH5buw2-f4Hlw&oe=691F7CCC"
-
-              alt="avatar"
+           <img
+            src="https://scontent.fsgn8-4.fna.fbcdn.net/v/t39.30808-1/537187856_1444879253437802_3963755224737322732_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=h5x2ZoWUPDgQ7kNvwFjlLWm&_nc_oc=AdlIokzGZDGz20b0LR4Xr8BzbBHKkDgtRvlEkJAWGYFRElnaZs0y_E-UQXgBxqOsm_w&_nc_zt=24&_nc_ht=scontent.fsgn8-4.fna&_nc_gid=Pi6owJztdExPiGAMe-2fPQ&oh=00_AfifQeh_D6juSj9Cy6Mh2aVe4Th3slLxBc78H785y71Acw&oe=69279E0C"
+            alt="logo"
 
               className="object-cover rounded-full h-10 w-10"
 
