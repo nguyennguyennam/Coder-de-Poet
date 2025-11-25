@@ -149,15 +149,19 @@ builder.Services
         };
     });
 
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCorsPolicy", policy =>
-        {
-            policy.WithOrigins("http://localhost:3000")  
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials(); 
-        });
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -188,7 +192,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("DevCorsPolicy");
+app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
