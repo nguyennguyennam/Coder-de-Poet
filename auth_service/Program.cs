@@ -51,7 +51,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
-builder.Service.AddHealthChecks();
+builder.Services.AddHealthChecks();
 
 string ConvertDatabaseUrl(string url)
 {
