@@ -17,18 +17,45 @@ namespace auth_service.Infrastructure.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("Users");
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Email).IsUnique();
-                entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.HashedPassword).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FullName).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.UserRole).HasDefaultValue(UserRole.Normal_Student).IsRequired();
-                entity.Property(e => e.RefreshToken).HasMaxLength(500);
-            });
-        }
+                entity.HasKey(u => u.Id);
+                
+                // Cấu hình UserRole - QUAN TRỌNG
+                entity.Property(u => u.UserRole)
+                    .HasConversion<string>() // ⬅️ Chuyển enum thành string
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                // Cấu hình DateOfBirth
+                entity.Property(u => u.DateOfBirth)
+                    .HasColumnName("DateOfBirth")
+                    .HasColumnType("date")
+                    .IsRequired();
+
+                // Các property khác
+                entity.Property(u => u.Email)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(u => u.FullName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(u => u.HashedPassword)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(u => u.RefreshToken)
+                    .HasMaxLength(500);
+
+                entity.Property(u => u.AvatarUrl)
+                    .HasMaxLength(1000);
+    });
+}
     }
 
 }

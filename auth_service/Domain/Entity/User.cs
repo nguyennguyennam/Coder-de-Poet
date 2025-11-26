@@ -4,6 +4,8 @@
 */
 using System.ComponentModel.DataAnnotations.Schema;
 
+using System.ComponentModel.DataAnnotations;
+
 using System;
 
 namespace auth_service.Domain.Entity
@@ -25,7 +27,8 @@ namespace auth_service.Domain.Entity
         public string FullName { get; private set; } = string.Empty;
         public string AvatarUrl { get; private set; } = string.Empty;
         public UserRole UserRole { get; private set; }
-        [Column("dateofBirth")]
+        [Column(TypeName = "date")] 
+        [DataType(DataType.Date)]
         public DateTime DateOfBirth { get; set; }
 
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
