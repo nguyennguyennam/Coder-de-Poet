@@ -90,19 +90,7 @@ string ConvertDatabaseUrl(string url)
 
     var port = uri.Port > 0 ? uri.Port : 5432;
 
-    var connectionString = new NpgsqlConnectionStringBuilder
-    {
-        Host = uri.Host,
-        Port = port,
-        Database = database,
-        Username = username,
-        Password = password,
-        SslMode = SslMode.Require,
-        TrustServerCertificate = true,
-        Pooling = true,
-        Timeout = 30,
-        CommandTimeout = 30
-    }.ToString();
+    var connectionString = $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
 
     Console.WriteLine($"✅ Converted database URL");
     return connectionString;
@@ -120,11 +108,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
         }
         
         Console.WriteLine("✅ Using ConnectionStrings:DefaultConnection");
-        options.UseNpgsql(connectionString, 
-            npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(5)
-            ));
+        options.UseNpgsql(connectionString);
     }
     else
     {
@@ -132,11 +116,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
         {
             Console.WriteLine("✅ Using DATABASE_URL from environment");
             var conn = ConvertDatabaseUrl(databaseUrl);
-            options.UseNpgsql(conn, 
-                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5)
-                ));
+            options.UseNpgsql(conn);
         }
         catch (Exception ex)
         {
