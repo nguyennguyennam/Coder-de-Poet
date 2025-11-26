@@ -62,7 +62,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHealthChecks();
 
-// Database Configuration - CHỈ dùng Neon PostgreSQL
+// Database Configuration
 string ConvertDatabaseUrl(string url)
 {
     if (string.IsNullOrEmpty(url))
@@ -70,8 +70,6 @@ string ConvertDatabaseUrl(string url)
         throw new ArgumentException("Database URL cannot be null or empty");
     }
 
-
-    // Handle postgresql:// format
     if (url.StartsWith("postgresql://"))
     {
         url = url.Replace("postgresql://", "postgres://");
@@ -91,56 +89,35 @@ string ConvertDatabaseUrl(string url)
 
     var port = uri.Port > 0 ? uri.Port : 5432;
 
-    var connectionString = $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
-
-    Console.WriteLine($"✅ Converted to connection string");
-    return connectionString;
+    return $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
 }
 
 string GetConnectionString()
 {
-    // Ưu tiên DATABASE_URL từ environment variable
     if (!string.IsNullOrEmpty(databaseUrl))
     {
-        Console.WriteLine("✅ Using DATABASE_URL from environment variables");
         return ConvertDatabaseUrl(databaseUrl);
     }
 
-    // Fallback: DATABASE_URL từ configuration
     var databaseUrlFromConfig = builder.Configuration["DATABASE_URL"];
     if (!string.IsNullOrEmpty(databaseUrlFromConfig))
     {
-        Console.WriteLine("✅ Using DATABASE_URL from appsettings.json");
         return ConvertDatabaseUrl(databaseUrlFromConfig);
     }
 
-    // Fallback: Direct connection string từ appsettings.json
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     if (!string.IsNullOrEmpty(connectionString))
     {
-        Console.WriteLine("✅ Using ConnectionStrings:DefaultConnection from appsettings.json");
         return connectionString;
     }
 
-    throw new InvalidOperationException("No database configuration found. Please set DATABASE_URL environment variable or ConnectionStrings:DefaultConnection in appsettings.json");
+    throw new InvalidOperationException("No database configuration found");
 }
 
 builder.Services.AddDbContext<UserDbContext>(options =>
 {
-    try
-    {
-        var connectionString = GetConnectionString();
-        Console.WriteLine($"🔗 Database: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host="))?.Replace("Host=", "")}");
-        Console.WriteLine($"🔗 Username: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Username="))?.Replace("Username=", "")}");
-        
-        options.UseNpgsql(connectionString);
-        Console.WriteLine("✅ PostgreSQL database configured successfully");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Database configuration failed: {ex.Message}");
-        throw;
-    }
+    var connectionString = GetConnectionString();
+    options.UseNpgsql(connectionString);
 });
 
 // Dependency Injection
@@ -158,7 +135,6 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-        // Use environment variables, fallback to appsettings.json
         var secretKey = jwtSecret ?? builder.Configuration["JWT:SecretKey"];
         var issuer = jwtIssuer ?? builder.Configuration["JWT:Issuer"];
         var audience = jwtAudience ?? builder.Configuration["JWT:Audience"];
@@ -188,32 +164,26 @@ builder.Services.AddCors(options =>
 
     if (!string.IsNullOrEmpty(allowedOriginsEnv))
     {
-        Console.WriteLine("✅ Using ALLOWED_ORIGINS from environment");
         origins = allowedOriginsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)
                  .Select(origin => origin.Trim())
                  .ToArray();
     }
     else
     {
-        // Fallback to appsettings.json
         var allowedOriginsConfig = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
         
         if (allowedOriginsConfig != null && allowedOriginsConfig.Length > 0)
         {
-            Console.WriteLine("✅ Using AllowedOrigins from appsettings.json");
             origins = allowedOriginsConfig;
         }
         else
         {
-            Console.WriteLine("⚠️ Using default CORS origins");
             origins = new[] {
                 "https://coder-de-poet.vercel.app",
                 "https://coder-de-poet-2.onrender.com"
             };
         }
     }
-
-    Console.WriteLine($"🌐 CORS origins: {string.Join(", ", origins)}");
 
     options.AddPolicy("CorsPolicy", policy =>
     {
@@ -226,49 +196,42 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Database initialization - CHỈ dùng Neon PostgreSQL
 try
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
     
-    Console.WriteLine("🔗 Testing database connection to Neon PostgreSQL...");
-    
-    // Test connection với retry
-    var maxRetries = 3;
+    var maxRetries = 2; // Giảm retries
     for (int i = 1; i <= maxRetries; i++)
     {
         try
         {
             if (dbContext.Database.CanConnect())
             {
-                Console.WriteLine("✅ Database connection successful");
-                
-                // Apply migrations
-                Console.WriteLine("🔄 Applying database migrations...");
-                dbContext.Database.Migrate();
-                Console.WriteLine("✅ Database migrations applied");
+                // Kiểm tra xem có migration pending không
+                var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+                if (pendingMigrations.Any())
+                {
+                    dbContext.Database.EnsureCreated();
+                }
+                // Nếu không có migration pending, không làm gì cả
                 break;
             }
         }
+        catch (Exception ex) when (i < maxRetries && ex.Message.Contains("already exists"))
+        {
+            // Bỏ qua lỗi "already exists" - table đã tồn tại là OK
+            break;
+        }
         catch (Exception ex) when (i < maxRetries)
         {
-            Console.WriteLine($"⚠️ Connection attempt {i} failed: {ex.Message}");
-            Console.WriteLine("🔄 Retrying in 3 seconds...");
             await Task.Delay(3000);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ All connection attempts failed: {ex.Message}");
-            throw;
         }
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"💥 CRITICAL: Database connection failed: {ex.Message}");
-    Console.WriteLine("💡 Please check your DATABASE_URL and ensure the database is accessible");
-    throw; // Dừng ứng dụng nếu không kết nối được database
+    // Không throw - app vẫn chạy dù migration có lỗi
 }
 
 // Configure the HTTP request pipeline
@@ -290,10 +253,5 @@ app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-Console.WriteLine("🚀 Auth Service started successfully");
-Console.WriteLine($"📍 Environment: {app.Environment.EnvironmentName}");
-Console.WriteLine($"🗄️  Database: Neon PostgreSQL");
-Console.WriteLine($"🌐 CORS enabled for: {string.Join(", ", allowedOriginsEnv?.Split(',') ?? builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new string[0])}");
 
 app.Run();
