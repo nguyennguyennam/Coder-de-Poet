@@ -62,13 +62,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHealthChecks();
 
-// Database Configuration
+// Database Configuration - CHỈ dùng Neon PostgreSQL
 string ConvertDatabaseUrl(string url)
 {
     if (string.IsNullOrEmpty(url))
     {
         throw new ArgumentException("Database URL cannot be null or empty");
     }
+
 
     // Handle postgresql:// format
     if (url.StartsWith("postgresql://"))
@@ -85,44 +86,60 @@ string ConvertDatabaseUrl(string url)
     var database = uri.LocalPath.TrimStart('/');
     if (string.IsNullOrEmpty(database))
     {
-        database = "auth_service";
+        database = "neondb";
     }
 
     var port = uri.Port > 0 ? uri.Port : 5432;
 
     var connectionString = $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
 
-    Console.WriteLine($"✅ Converted database URL");
+    Console.WriteLine($"✅ Converted to connection string");
     return connectionString;
+}
+
+string GetConnectionString()
+{
+    // Ưu tiên DATABASE_URL từ environment variable
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        Console.WriteLine("✅ Using DATABASE_URL from environment variables");
+        return ConvertDatabaseUrl(databaseUrl);
+    }
+
+    // Fallback: DATABASE_URL từ configuration
+    var databaseUrlFromConfig = builder.Configuration["DATABASE_URL"];
+    if (!string.IsNullOrEmpty(databaseUrlFromConfig))
+    {
+        Console.WriteLine("✅ Using DATABASE_URL from appsettings.json");
+        return ConvertDatabaseUrl(databaseUrlFromConfig);
+    }
+
+    // Fallback: Direct connection string từ appsettings.json
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        Console.WriteLine("✅ Using ConnectionStrings:DefaultConnection from appsettings.json");
+        return connectionString;
+    }
+
+    throw new InvalidOperationException("No database configuration found. Please set DATABASE_URL environment variable or ConnectionStrings:DefaultConnection in appsettings.json");
 }
 
 builder.Services.AddDbContext<UserDbContext>(options =>
 {
-    if (string.IsNullOrEmpty(databaseUrl))
+    try
     {
-        // Fallback to appsettings.json
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            throw new InvalidOperationException("No database configuration found");
-        }
+        var connectionString = GetConnectionString();
+        Console.WriteLine($"🔗 Database: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host="))?.Replace("Host=", "")}");
+        Console.WriteLine($"🔗 Username: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Username="))?.Replace("Username=", "")}");
         
-        Console.WriteLine("✅ Using ConnectionStrings:DefaultConnection");
         options.UseNpgsql(connectionString);
+        Console.WriteLine("✅ PostgreSQL database configured successfully");
     }
-    else
+    catch (Exception ex)
     {
-        try
-        {
-            Console.WriteLine("✅ Using DATABASE_URL from environment");
-            var conn = ConvertDatabaseUrl(databaseUrl);
-            options.UseNpgsql(conn);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error converting DATABASE_URL: {ex.Message}");
-            throw;
-        }
+        Console.WriteLine($"❌ Database configuration failed: {ex.Message}");
+        throw;
     }
 });
 
@@ -209,30 +226,49 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Database initialization
+// Database initialization - CHỈ dùng Neon PostgreSQL
 try
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
     
-    Console.WriteLine("🔗 Testing database connection...");
-    if (dbContext.Database.CanConnect())
+    Console.WriteLine("🔗 Testing database connection to Neon PostgreSQL...");
+    
+    // Test connection với retry
+    var maxRetries = 3;
+    for (int i = 1; i <= maxRetries; i++)
     {
-        Console.WriteLine("✅ Database connection successful");
-        
-        // Apply migrations
-        Console.WriteLine("🔄 Applying database migrations...");
-        dbContext.Database.Migrate();
-        Console.WriteLine("✅ Database migrations applied");
-    }
-    else
-    {
-        Console.WriteLine("❌ Cannot connect to database");
+        try
+        {
+            if (dbContext.Database.CanConnect())
+            {
+                Console.WriteLine("✅ Database connection successful");
+                
+                // Apply migrations
+                Console.WriteLine("🔄 Applying database migrations...");
+                dbContext.Database.Migrate();
+                Console.WriteLine("✅ Database migrations applied");
+                break;
+            }
+        }
+        catch (Exception ex) when (i < maxRetries)
+        {
+            Console.WriteLine($"⚠️ Connection attempt {i} failed: {ex.Message}");
+            Console.WriteLine("🔄 Retrying in 3 seconds...");
+            await Task.Delay(3000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ All connection attempts failed: {ex.Message}");
+            throw;
+        }
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
+    Console.WriteLine($"💥 CRITICAL: Database connection failed: {ex.Message}");
+    Console.WriteLine("💡 Please check your DATABASE_URL and ensure the database is accessible");
+    throw; // Dừng ứng dụng nếu không kết nối được database
 }
 
 // Configure the HTTP request pipeline
@@ -257,6 +293,7 @@ app.MapControllers();
 
 Console.WriteLine("🚀 Auth Service started successfully");
 Console.WriteLine($"📍 Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"🗄️  Database: Neon PostgreSQL");
 Console.WriteLine($"🌐 CORS enabled for: {string.Join(", ", allowedOriginsEnv?.Split(',') ?? builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new string[0])}");
 
 app.Run();
