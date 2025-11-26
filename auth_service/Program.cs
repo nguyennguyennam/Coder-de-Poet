@@ -197,7 +197,8 @@ builder.Services.AddCors(options =>
         {
             origins = new[] {
                 "https://coder-de-poet.vercel.app",
-                "https://coder-de-poet-2.onrender.com"
+                "https://coder-de-poet-2.onrender.com",
+                "https://coder-de-poet-4.onrender.com"
             };
         }
     }
