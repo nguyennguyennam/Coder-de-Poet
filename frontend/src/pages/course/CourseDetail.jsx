@@ -21,6 +21,12 @@ const getEmbedUrl = (url) => {
   return `https://www.youtube.com/embed/${id}`;
 };
 
+const getThumbnail = (url) => {
+  const id = url.split("v=")[1].split("&")[0];
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+};
+
+
 const CourseDetail = () => {
   const { id } = useParams();
 
@@ -33,7 +39,7 @@ const CourseDetail = () => {
   const [currentLesson, setCurrentLesson] = useState(courseLessons[0]);
 
   return (
-    <div className="flex max-w-7xl mx-auto mt-10 gap-6">
+    <div className="flex max-w-7xl mx-auto mt-10 gap-6 sm:px-5">
       {/* LEFT: VIDEO + TITLE */}
       <div className="flex-1 space-y-4">
         <h1 className="text-2xl font-bold">{currentLesson.title}</h1>
@@ -50,21 +56,26 @@ const CourseDetail = () => {
       {/* RIGHT: LESSON LIST */}
       <div className="w-80 bg-white rounded-xl shadow p-4 h-fit">
         <h2 className="font-semibold mb-3 text-lg">Course Lessons</h2>
-        <div className="space-y-2">
-          {courseLessons.map((lesson) => (
-            <button
-              key={lesson.id}
-              onClick={() => setCurrentLesson(lesson)}
-              className={`block w-full text-left p-3 rounded-lg border ${
-                currentLesson.id === lesson.id
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-gray-50 hover:bg-gray-100"
-              }`}
-            >
-              {lesson.position}. {lesson.title}
-            </button>
-          ))}
-        </div>
+        <div className="space-y-2 p-1 max-h-[500px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
+            {courseLessons.map((lesson) => (
+              <button
+                key={lesson.id}
+                onClick={() => setCurrentLesson(lesson)}
+                className={`flex items-center gap-3 w-full text-left p-2 rounded-lg border ${
+                  currentLesson.id === lesson.id
+                    ? "bg-[#666] text-white border-blue-600"
+                    : "bg-gray-50 hover:bg-gray-100"
+                }`}
+              >
+                <img
+                  src={getThumbnail(lesson.url)}
+                  alt={lesson.title}
+                  className="w-20 h-12 object-cover rounded"
+                />
+                <span className="text-sm">{lesson.position}. {lesson.title}</span>
+              </button>
+            ))}
+          </div>
       </div>
     </div>
   );
