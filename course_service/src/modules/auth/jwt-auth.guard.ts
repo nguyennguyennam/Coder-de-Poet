@@ -27,12 +27,18 @@ export class AuthGuard implements CanActivate {
             console.log("[AuthGuard] Using secret:", secret ? "(loaded)" : "(NOT loaded)");
             console.log("[AuthGuard] Incoming token:", token);
 
-            const payload = await this.jwtService.verifyAsync(token, {
+            const payload: any = await this.jwtService.verifyAsync(token, {
                 secret,
             });
+
+            // Normalize common claim names for id and role
+            const id = payload.sub || payload.nameid || payload.NameIdentifier || payload.userId || payload.id;
+            const role = payload.Role || payload.role || payload.roles || payload.RoleName;
+
             request['user'] = {
-                role: payload.Role
-            }
+                id,
+                role
+            };
         }
         catch (error) {
             throw new UnauthorizedException();

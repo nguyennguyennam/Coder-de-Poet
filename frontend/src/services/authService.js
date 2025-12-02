@@ -9,17 +9,18 @@ class AuthService {
       const response = await api.post('/api/auth/signin', credentials);
       const { data } = response;
 
+
       // Lưu token
-      this.setAccessToken(data.accessToken);
+      if (data.accessToken) this.setAccessToken(data.accessToken);
       
     // Trả về structure mà frontend mong đợi
-      return response.data;
+      return {success: true, user: data.user}
     
   } catch (error) {
     console.error('❌ Login service error:', error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message
+      error: error.response?.data?.errorMessage || error.message
     };
   }
 }

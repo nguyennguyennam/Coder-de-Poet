@@ -3,6 +3,7 @@ import WeeklyActivity from './WeeklyActivity';
 import MyCourses from './MyCourses';
 import FriendsList from './FriendsList';
 import { useSidebar } from "../../contexts/SidebarContext";
+import { authService } from '../../services/authService';
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -122,11 +123,12 @@ const ProfileSidebar = ({
         )}
         
         {activeTab === 'courses' && (
-          <MyCourses courses={myCourses} />
+          <MyCourses myCoursesProp={myCourses} user={user} />
         )}
       </div>
     </div>
   );
 };
+
 
 export default ProfileSidebar;

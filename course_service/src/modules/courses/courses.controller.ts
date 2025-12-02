@@ -28,6 +28,33 @@ export class CoursesController {
         return this.coursesService.findAll(query);
     }
 
+    @Get('top-tags')
+    topTags(@Query('limit') limit?: string) {
+        const l = limit ? Math.max(1, parseInt(limit, 10) || 3) : 3;
+        return this.coursesService.getTopTags(l);
+    }
+
+    @Get('category/:categoryId/top')
+    topByCategory(@Param('categoryId') categoryId: string, @Query('limit') limit?: string) {
+        const l = limit ? Math.max(1, parseInt(limit, 10) || 4) : 4;
+        return this.coursesService.getTopCoursesByCategory(categoryId, l);
+    }
+
+    @Get('top')
+    top(@Query('limit') limit?: string) {
+        const l = limit ? Math.max(1, parseInt(limit, 10) || 4) : 4;
+        return this.coursesService.getTopCourses(l);
+    }
+
+    // GET /courses/by-category/:categoryId?skip=0&take=20&search=...&status=...
+    @Get('by-category/:categoryId')
+    getCoursesByCategory(
+        @Param('categoryId') categoryId: string,
+        @Query() query: QueryCourseDto
+    ) {
+        return this.coursesService.getCoursesByCategory(categoryId, query);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.coursesService.findOne(id);
@@ -57,4 +84,6 @@ export class CoursesController {
     draft(@Param('id') id: string) {
         return this.coursesService.draft(id);
     }
+
+
 }
