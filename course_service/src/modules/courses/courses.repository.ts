@@ -21,7 +21,8 @@ export class CoursesRepository {
         access_type,
         status,
         thumbnail_url,
-        updated_at
+        updated_at,
+        student_count
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,now())
       RETURNING *;
@@ -37,6 +38,7 @@ export class CoursesRepository {
       dto.accessType,
       dto.status ?? 'draft',
       dto.thumbnailUrl ?? null,
+      0
     ];
 
     const { rows } = await this.pool.query(query, values);
@@ -138,6 +140,14 @@ export class CoursesRepository {
     };
   }
 
+  // Return raw tag values for aggregation. Tag format may be JSON array string or comma-separated string.
+  async getAllTags() {
+    const { rows } = await this.pool.query(
+      `SELECT tag FROM courses WHERE tag IS NOT NULL`,
+    );
+    return rows.map(r => r.tag).filter(Boolean);
+  }
+
   async update(id: string, dto: UpdateCourseDto) {
     const fields: string[] = [];
     const values: any[] = [];
@@ -200,6 +210,7 @@ export class CoursesRepository {
     return rows[0] ?? null;
   }
 
+<<<<<<< HEAD
 
   // This function returns the list of trending tags based on tags list of each course
   async getTrendingTags () {
@@ -214,5 +225,81 @@ export class CoursesRepository {
       `;
     const { rows } =  await this.pool.query(query);
     return rows ?? null;
+=======
+  // Return top N courses for a given category ordered by student_count desc
+  async getTopByCategory(categoryId: string, limit = 4) {
+    const { rows } = await this.pool.query(
+      `SELECT * FROM courses WHERE category_id = $1 AND status = 'published' ORDER BY student_count DESC NULLS LAST LIMIT $2`,
+      [categoryId, limit],
+    );
+    return rows;
+  }
+
+  // Return top N courses across all categories ordered by student_count desc
+  async getTop(limit = 4) {
+    const { rows } = await this.pool.query(
+      `SELECT * FROM courses WHERE status = 'published' ORDER BY student_count DESC NULLS LAST LIMIT $1`,
+      [limit],
+    );
+    return rows;
+  }
+
+  // Return all courses for a given category with optional filtering and pagination
+  async getByCategoryId(categoryId: string, queryDto?: QueryCourseDto) {
+    const {
+      skip = 0,
+      take = 20,
+      search,
+      status,
+    } = queryDto || {};
+
+    const whereParts: string[] = ['category_id = $1'];
+    const params: any[] = [categoryId];
+    let idx = 2;
+
+    if (search) {
+      whereParts.push(`(title ILIKE $${idx} OR description ILIKE $${idx})`);
+      params.push(`%${search}%`);
+      idx++;
+    }
+
+    if (status) {
+      whereParts.push(`status = $${idx}`);
+      params.push(status);
+      idx++;
+    }
+
+    const whereClause = whereParts.join(' AND ');
+
+    const itemsQuery = `
+      SELECT *
+      FROM courses
+      WHERE ${whereClause}
+      ORDER BY updated_at DESC NULLS LAST, title ASC
+      OFFSET $${idx}
+      LIMIT $${idx + 1};
+    `;
+    params.push(skip);
+    params.push(take);
+
+    const countParams = params.slice(0, idx - 1);
+    const countQuery = `
+      SELECT COUNT(*)::int AS total
+      FROM courses
+      WHERE ${whereClause};
+    `;
+
+    const [items, count] = await Promise.all([
+      this.pool.query(itemsQuery, params),
+      this.pool.query(countQuery, countParams),
+    ]);
+
+    return {
+      items: items.rows,
+      total: count.rows[0].total,
+      skip,
+      take,
+    };
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
   }
 }

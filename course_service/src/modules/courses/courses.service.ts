@@ -32,6 +32,14 @@ export class CoursesService {
         return { trendingTags, courses };
     }
 
+    async getTopCoursesByCategory(categoryId: string, limit = 4) {
+        return this.repo.getTopByCategory(categoryId, limit);
+    }
+
+    async getTopCourses(limit = 4) {
+        return this.repo.getTop(limit);
+    }
+
     async findOne(id: string) {
         const course = await this.repo.findById(id);
         if (!course) throw new NotFoundException('Course not found');
@@ -69,6 +77,55 @@ export class CoursesService {
     async draft(id: string) {
         await this.ensure(id);
         return this.repo.setStatus(id, 'draft');
+    }
+
+    // Return top N tags across all courses. Handles tags stored as JSON arrays or comma-separated strings.
+    async getTopTags(limit = 3) {
+        const rawTags = await this.repo.getAllTags();
+        const counter = new Map<string, number>();
+
+        for (const t of rawTags) {
+            if (!t) continue;
+            let items: string[] = [];
+            try {
+                if (typeof t === 'string') {
+                    const s = t.trim();
+                    if (s.startsWith('[') && s.endsWith(']')) {
+                        // JSON array string
+                        const parsed = JSON.parse(s);
+                        if (Array.isArray(parsed)) items = parsed.map((x: any) => String(x).trim());
+                    } else if (s.includes(',')) {
+                        // comma separated
+                        items = s.split(',').map(x => x.trim()).filter(Boolean);
+                    } else {
+                        // single tag string
+                        items = [s];
+                    }
+                } else if (Array.isArray(t)) {
+                    items = t.map(x => String(x).trim());
+                }
+            } catch (e) {
+                // If parse fails, fallback to treating as single string token
+                items = [String(t).trim()];
+            }
+
+            for (const tag of items) {
+                if (!tag) continue;
+                const key = tag.toLowerCase();
+                counter.set(key, (counter.get(key) ?? 0) + 1);
+            }
+        }
+
+        const sorted = Array.from(counter.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, limit)
+            .map(([tag, count]) => ({ tag, count }));
+
+        return sorted;
+    }
+
+    async getCoursesByCategory(categoryId: string, query: QueryCourseDto) {
+        return this.repo.getByCategoryId(categoryId, query);
     }
 
     private async ensure(id: string) {

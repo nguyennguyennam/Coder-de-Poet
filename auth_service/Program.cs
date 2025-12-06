@@ -154,8 +154,8 @@ builder.Services
             ValidIssuer = issuer ?? "auth-service",
             ValidAudience = audience ?? "auth-service-client",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ClockSkew = TimeSpan.Zero,
-            RoleClaimType = ClaimTypes.Role
+            // Note: role and name claim mapping can be configured here if needed
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -198,7 +198,9 @@ builder.Services.AddCors(options =>
             origins = new[] {
                 "https://coder-de-poet.vercel.app",
                 "https://coder-de-poet-2.onrender.com",
-                "https://coder-de-poet-4.onrender.com"
+                "https://coder-de-poet-4.onrender.com",
+                "http://localhost:3001",
+                "http://localhost:3000"
             };
         }
     }
@@ -214,11 +216,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-try
-{
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-    
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+
     var maxRetries = 2; // Giảm retries
     for (int i = 1; i <= maxRetries; i++)
     {
@@ -236,21 +238,21 @@ try
                 break;
             }
         }
-        catch (Exception ex) when (i < maxRetries && ex.Message.Contains("already exists"))
+        catch (Exception) when (i < maxRetries)
         {
             // Bỏ qua lỗi "already exists" - table đã tồn tại là OK
             break;
         }
-        catch (Exception ex) when (i < maxRetries)
+        catch (Exception) when (i < maxRetries)
         {
             await Task.Delay(3000);
         }
     }
 }
-catch (Exception ex)
-{
-    // Không throw - app vẫn chạy dù migration có lỗi
-}
+    catch (Exception)
+    {
+        // Không throw - app vẫn chạy dù migration có lỗi
+    }
 
 // Configure the HTTP request pipeline
 app.UseSwagger();

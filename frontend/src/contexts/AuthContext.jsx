@@ -36,11 +36,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
-    const data = await authService.login(credentials);
-    const userData = await authService.getCurrentUser();
-    setUser(userData);
+    try {
+      const result = await authService.login(credentials);
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
 
-    return { success: true, role: userData.role };
+      // Đăng nhập OK → lấy user
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+
+      return { success: true, role: userData.role };
+    } catch (err) {
+      console.error("LOGIN ERROR:", err);
+      return { success: false, error: err.message || "Login failed" };
+    }
   };
 
   const signup = async (userData) => {
@@ -74,7 +84,6 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
-
 
   const logout = async () => {
     await authService.logout();

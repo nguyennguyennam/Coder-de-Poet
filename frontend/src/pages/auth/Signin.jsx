@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -8,41 +8,84 @@ const SignIn = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isComponentMounted, setIsComponentMounted] = useState(true);
 
-  const { login, socialLogin } = useAuth();
+  const { login, socialLogin, isAuthenticated, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    const result = await login({ email, password });
-
-    if (result.success) {
-      if (result.role === "Admin") {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      if (isAdmin) {
         navigate('/admin', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
-    } else {
-      setError(result.error);
     }
+  }, [isAuthenticated, loading, isAdmin, navigate]);
 
-    setIsLoading(false);
+  // Đảm bảo component đã mounted
+  useEffect(() => {
+    setIsComponentMounted(true);
+    return () => {
+      setIsComponentMounted(false);
+    };
+  }, []);
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (error) setError('');
+    setIsLoading(true);
+
+    try {      
+      const result = await login({ email, password });
+      console.log("📋 Login result:", result);
+
+      if (!isComponentMounted) return;
+      console.log("📋 Login result:", result);
+      if (result.success) {
+        console.log("✅ Login successful, role:", result.role);
+        if (result.role === "Admin") {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate(from, { replace: true });
+        }
+      } else {
+        console.log("❌ Login failed, error:", result.error);
+        setError(result.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      console.error("💥 Login error:", err);
+      if (isComponentMounted) {
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      if (isComponentMounted) {
+        setIsLoading(false);
+      }
+    }
   };
 
-  // SỬ DỤNG useGoogleLogin - ĐƠN GIẢN HƠN RẤT NHIỀU
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       console.log('✅ Google login successful:', tokenResponse);
+      
+      if (!isComponentMounted) return;
+      
       setIsLoading(true);
       
       try {
+        // Lưu redirect path trước khi login
+        localStorage.setItem('redirectAfterLogin', from);
+        
         // Gửi access token đến backend
         const result = await socialLogin('google', tokenResponse.access_token);
+        console.log("📋 Social login result:", result);
+        
+        if (!isComponentMounted) return;
         
         if (result.success) {
           const redirectPath = localStorage.getItem('redirectAfterLogin') || '/';
@@ -54,82 +97,128 @@ const SignIn = () => {
             navigate(redirectPath, { replace: true });
           }
         } else {
-          setError(result.error);
+          setError(result.error || 'Google login failed');
         }
       } catch (err) {
         console.error('❌ Google login error:', err);
-        setError('Google login failed');
+        if (isComponentMounted) {
+          setError('Google login failed. Please try again.');
+        }
       } finally {
-        setIsLoading(false);
+        if (isComponentMounted) {
+          setIsLoading(false);
+        }
       }
     },
     onError: (error) => {
       console.error('❌ Google login failed:', error);
-      setError('Google login failed. Please try again.');
-      setIsLoading(false);
+      if (isComponentMounted) {
+        setError('Google login failed. Please try again.');
+        setIsLoading(false);
+      }
     },
     scope: 'email profile openid',
   });
 
   const handleGoogleLogin = () => {
+    if (isLoading) return;
+    
     setError('');
-    // Lưu redirect path trước khi login
-    localStorage.setItem('redirectAfterLogin', from);
-    // Kích hoạt Google login
     googleLogin();
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen via-white to-amber-100 px-5">
-      <div className="w-full max-w-7xl h-[96vh] bg-[#EFE9E3] backdrop-blur-2xl shadow-2xl rounded-3xl grid md:grid-cols-2 overflow-hidden border-1 border-[#57595B]">
-
-        <div className="hidden md:block">
+    <div className="flex items-center justify-center min-h-screen  via-white to-amber-100 px-4 sm:px-5">
+      <div className="w-full max-w-7xl h-[96vh] bg-[#EFE9E3] backdrop-blur-2xl shadow-2xl rounded-3xl grid md:grid-cols-2 overflow-hidden border border-[#57595B] relative">
+        
+        {/* Left side - Image */}
+        <div className="hidden md:block relative">
           <img
             src="https://res.cloudinary.com/drjlezbo7/image/upload/v1764014419/687c4c71483845.5bcee4e11a18b_pq1wra.gif"
             alt="Learning"
             className="h-full w-full object-cover rounded-l-3xl"
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#EFE9E3]/30"></div>
         </div>
 
-        <div className="flex flex-col justify-center bg-white px-10">
+        {/* Right side - Form */}
+        <div className="flex flex-col justify-center bg-white px-6 sm:px-10 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-black mb-2">Welcome to Learnix</h1>
-            <p className="text-gray-500">Earn your legacy</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Welcome to Learnix</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Earn your legacy</p>
           </div>
 
+          {/* Error Message */}
           {error && (
-            <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm text-center">
-              {error}
+            <div className="mb-6 animate-fadeIn">
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <input
-              type="email"
-              placeholder="ronaldo@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-              className="w-full px-12 py-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-black outline-none"
-            />
+            <div className="relative">
+              <input
+                type="email"
+                placeholder="ronaldo@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+                className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              className="w-full px-12 py-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-black outline-none"
-            />
+            <div className="relative">
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+            </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-3 rounded-full font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
+              className={`w-full py-3 rounded-full font-medium transition-all duration-300 ${
+                isLoading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gray-900 hover:bg-black text-white'
+              }`}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Signing in...
+                </span>
+              ) : 'Sign In'}
             </button>
           </form>
 
@@ -139,11 +228,15 @@ const SignIn = () => {
             <div className="flex-1 h-px bg-gray-300"></div>
           </div>
 
-          {/* SIMPLIFIED GOOGLE BUTTON */}
+          {/* Google Button */}
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 py-3 rounded-full hover:bg-gray-50 font-medium disabled:opacity-50 transition-colors shadow-sm"
+            className={`w-full flex items-center justify-center gap-3 py-3 rounded-full font-medium transition-all duration-300 ${
+              isLoading 
+                ? 'bg-gray-100 cursor-not-allowed' 
+                : 'bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+            } shadow-sm`}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -158,13 +251,25 @@ const SignIn = () => {
             Don't have an account?{' '}
             <button 
               onClick={() => navigate('/signup')} 
-              className="underline hover:text-black font-medium transition-colors"
+              className="text-blue-600 hover:text-blue-800 font-medium transition-colors underline"
+              disabled={isLoading}
             >
               Sign Up
             </button>
           </p>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

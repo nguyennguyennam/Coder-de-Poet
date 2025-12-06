@@ -1,5 +1,9 @@
 import React, { useMemo } from 'react';
+<<<<<<< HEAD
 import { NavLink } from 'react-router-dom';
+=======
+import CourseCard from './CourseCard';
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
 
 const PopularCategories = ({ courses }) => {
   const topCourses = useMemo(() => {
@@ -21,6 +25,7 @@ const PopularCategories = ({ courses }) => {
     return rows;
   }, [topCourses]);
 
+<<<<<<< HEAD
   const getGradient = (index) => {
     const gradients = [
       'bg-[#FFDDAE]',
@@ -29,6 +34,15 @@ const PopularCategories = ({ courses }) => {
       'bg-[#F6FCDF]',
     ];
     return gradients[index % gradients.length];
+=======
+  const formatTag = (tag) => {
+    if (!tag) return '';
+    const formatted = tag.replace(/-/g, ' ');
+    return formatted
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
   };
 
   if (topCourses.length === 0) return null;
@@ -42,11 +56,16 @@ const PopularCategories = ({ courses }) => {
         </span>
       </div>
 
+<<<<<<< HEAD
       {/* GRID */}
+=======
+      {/* GRID với CourseCard */}
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
       <div className="space-y-6">
         {rows.map((row, rowIndex) => (
           <div key={rowIndex} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {row.map((course, courseIndex) => (
+<<<<<<< HEAD
               <NavLink
                 key={course.id}
                 to={`/courses/${course.id}`}
@@ -109,11 +128,18 @@ const PopularCategories = ({ courses }) => {
                   </div>
                 </div>
               </NavLink>
+=======
+              <CourseCard 
+                key={course.id} 
+                course={course} 
+              />
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
             ))}
           </div>
         ))}
       </div>
 
+<<<<<<< HEAD
       <div className="mt-6 pt-4 border-t border-gray-200 text-sm flex justify-between">
         <span className="text-gray-600">
           Total students:
@@ -138,6 +164,52 @@ const PopularCategories = ({ courses }) => {
           overflow: hidden;
         }
       `}</style>
+=======
+      {/* Footer Stats */}
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <div className="flex flex-col md:flex-row md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="text-sm">
+              <span className="text-gray-600">Total students:</span>
+              <span className="font-semibold text-gray-900 ml-1">
+                {formatStudents(topCourses.reduce((sum, c) => sum + c.students, 0))}
+              </span>
+            </div>
+            
+            <div className="text-sm">
+              <span className="text-gray-600">Top category:</span>
+              <span className="font-semibold text-gray-900 ml-1">
+                {topCourses[0]?.category || 'N/A'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="text-sm">
+              <span className="text-gray-600">Popular tags:</span>
+              <span className="font-semibold text-gray-900 ml-1">
+                {(() => {
+                  const allTags = topCourses.flatMap(c => c.tags || []);
+                  const tagCounts = {};
+                  
+                  allTags.forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                  });
+                  
+                  const popularTags = Object.entries(tagCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 2)
+                    .map(([tag]) => formatTag(tag))
+                    .join(', ');
+                  
+                  return popularTags || 'No tags';
+                })()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+>>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
     </div>
   );
 };

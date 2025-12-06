@@ -8,7 +8,7 @@ export default function Navigation_PC() {
 
   return (
     <nav
-      className={`bg-[#EFE9E3] shadow-lg rounded-3xl border-gray-200 h-[96vh] flex flex-col transition-all duration-300 ease-in-out
+      className={`bg-[#EFE9E3] shadow-lg rounded-3xl border-[#e0e0e0] border-[1px] h-[96vh] flex flex-col transition-all duration-300 ease-in-out
         ${isOpen ? "w-[20vw]" : "w-[8vw]"}`}
     >
       {/* TOP SECTION */}
