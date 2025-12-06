@@ -75,11 +75,11 @@ export class CoursesRepository {
     const params: any[] = [];
     let idx = 1;
 
-    if (search) {
-      whereParts.push(`(title ILIKE $${idx} OR description ILIKE $${idx})`);
-      params.push(`%${search}%`);
-      idx++;
-    }
+      if (search) {
+        whereParts.push(`(title ILIKE $${idx} OR description ILIKE $${idx})`);
+        params.push(`%${search}%`);
+        idx++;
+      }
 
     if (accessType) {
       whereParts.push(`access_type = $${idx}`);
