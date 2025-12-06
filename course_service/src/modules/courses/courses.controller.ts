@@ -7,20 +7,26 @@ import {
     Patch,
     Post,
     Query,
+    Req,
+    UseGuards,
  } from '@nestjs/common';
-
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { QueryCourseDto } from './dto/query-course.dto';
+import { AuthGuard } from '../auth/jwt-auth.guard';
+import { RoleGuard } from '../auth/role_guard.auth';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('courses')
 export class CoursesController {
     constructor(private readonly coursesService: CoursesService) {}
 
     @Post()
-    create(@Body() dto: CreateCourseDto) {
-        return this.coursesService.create(dto);
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('instructor', 'admin')
+    create(@Body() dto: CreateCourseDto, @Req() req) {
+        return this.coursesService.create({ ...dto, instructorId: req.user.id });
     }
 
     @Get()
@@ -61,13 +67,17 @@ export class CoursesController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
-        return this.coursesService.update(id, dto);
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('instructor', 'admin')
+    update(@Param('id') id: string, @Body() dto: UpdateCourseDto, @Req() req) {
+        return this.coursesService.update(id, dto, req.user.userId);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.coursesService.remove(id);
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('instructor', 'admin')
+    remove(@Param('id') id: string, @Req() req) {
+        return this.coursesService.remove(id, req.user.userId);
     }
 
     @Post(':id/publish')

@@ -38,7 +38,7 @@ export class CoursesRepository {
       dto.accessType,
       dto.status ?? 'draft',
       dto.thumbnailUrl ?? null,
-      0
+      dto.updatedAt ?? null,
     ];
 
     const { rows } = await this.pool.query(query, values);
