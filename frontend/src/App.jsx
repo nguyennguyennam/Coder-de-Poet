@@ -51,7 +51,7 @@ function Layout() {
       
       {!hideNavigation && (
         <>
-          <div className="block md:hidden w-full p-2">
+          <div className="absolute md:hidden w-full p-2  z-60 sticky">
             <Navigation_Mobile />
           </div>
           <div className="hidden md:block">
@@ -60,7 +60,7 @@ function Layout() {
         </>
       )}
 
-      <main className="flex-1 w-full md:px-0 md:h-[100vh] overflow-hidden">
+      <main className="flex-1 md:w-full h-[100vh] md:px-0  z-10">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<SignIn />} />
