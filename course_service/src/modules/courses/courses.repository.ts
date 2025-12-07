@@ -285,4 +285,12 @@ export class CoursesRepository {
       take,
     };
   }
+
+  async findByInstructorId(instructorId: string) {
+    const { rows } = await this.pool.query(
+      `SELECT * FROM courses WHERE instructor_id = $1 ORDER BY updated_at DESC NULLS LAST`,
+      [instructorId],
+    );
+    return rows;
+  }
 }
