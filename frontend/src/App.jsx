@@ -16,6 +16,7 @@ import GoogleCallbackHandler from './components/auth/GoogleCallbackHandler';
 import CourseDetail from './pages/course/CourseDetail';
 import CourseList from './pages/course/CourseList';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import CourseDetailModal from './pages/instructor/CourseDetailModal';
  
 // Component để xử lý redirect dựa trên role
 function RoleBasedRedirect() {

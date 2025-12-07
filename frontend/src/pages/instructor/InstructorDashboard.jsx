@@ -4,8 +4,13 @@ import InstructorStats from "../../components/instructor/InstructorStats";
 import CoursesFilterBar from "../../components/instructor/CoursesFilterBar";
 import CoursesTable from "../../components/instructor/CoursesTable";
 import EmptyCoursesState from "../../components/instructor/EmptyCoursesState";
+import InstructorAddLesson from "./InstructorAddLesson";
+import CourseDetailModal from "./CourseDetailModal";
+import { FiPlus } from "react-icons/fi";
+import { useAuth } from "../../contexts/AuthContext";
 
 const InstructorDashboard = () => {
+  const { user: instructorId } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,24 +20,18 @@ const InstructorDashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortBy, setSortBy] = useState("newest");
 
+  const [showAddLesson, setShowAddLesson] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+
   useEffect(() => {
+    console.log("Fetching courses for instructor:", instructorId.id);
+    if (!instructorId.id) return;
+    
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const data = await instructorService.getCourses();
-        const mapped = data.map((c) => ({
-          id: c.id,
-          title: c.title,
-          category: c.category?.name ?? c.category ?? "Other",
-          thumbnailUrl: c.thumbnail_url || c.thumbnailUrl,
-          status: c.status,
-          studentsCount: c.students_count ?? 0,
-          rating: c.rating ?? null,
-          reviewsCount: c.reviews_count ?? 0,
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }));
-        setCourses(mapped);
+        const data = await instructorService.getCoursesByInstructor(instructorId.id);
+        setCourses(data.items || data || []);
       } catch (err) {
         console.error(err);
         setError("Unable to fetch courses. Please try again.");
@@ -40,9 +39,23 @@ const InstructorDashboard = () => {
         setLoading(false);
       }
     };
-
     fetchCourses();
   }, []);
+
+  const handleViewCourse = (course) => {
+    console.log("View course", course.id);
+    setSelectedCourse(course);
+  };
+
+  const handleDeleteCourse = async (course) => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    try {
+      await instructorService.deleteCourse(course.id);
+      setCourses((prev) => prev.filter((c) => c.id !== course.id));
+    } catch {
+      alert("Failed to delete course.");
+    }
+  };
 
   const stats = useMemo(() => {
     const totalCourses = courses.length;
@@ -95,19 +108,9 @@ const InstructorDashboard = () => {
     return result;
   }, [courses, search, statusFilter, categoryFilter, sortBy]);
 
-  const handleCreateCourse = () => {
-    console.log("Navigate to create course page");
-  };
-
-  const handleDeleteCourse = async (course) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
-    try {
-      await instructorService.deleteCourse(course.id);
-      setCourses((prev) => prev.filter((c) => c.id !== course.id));
-    } catch {
-      alert("Failed to delete course.");
-    }
-  };
+  // const handleCreateCourse = () => {
+  //   console.log("Navigate to create course page");
+  // };
 
   const categories = useMemo(() => {
     const set = new Set();
@@ -127,13 +130,28 @@ const InstructorDashboard = () => {
             Welcome back! Manage and track your courses.
           </p>
         </div>
-        <button
+        {/* <button
           onClick={handleCreateCourse}
           className="mt-4 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition"
         >
           + Create New Course
+        </button> */}
+
+        <button
+          onClick={() => setShowAddLesson(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          <FiPlus className="text-lg" />
+          Add Lesson
         </button>
+
       </header>
+
+      {showAddLesson && (
+        <InstructorAddLesson
+          onClose={() => setShowAddLesson(false)}
+        />
+      )}
 
       {/* STATS */}
       <InstructorStats stats={stats} />
@@ -153,6 +171,13 @@ const InstructorDashboard = () => {
         />
       </div>
 
+      {selectedCourse && (
+        <CourseDetailModal
+          course={selectedCourse}
+          onClose={() => setSelectedCourse(null)}
+        />
+      )}
+
       {/* MAIN CONTENT */}
       <div className="bg-white rounded-lg shadow-md border border-gray-100 p-6">
         <div className="flex justify-between items-center mb-4">
@@ -169,7 +194,7 @@ const InstructorDashboard = () => {
         ) : error ? (
           <div className="text-center text-red-500 py-10">{error}</div>
         ) : courses.length === 0 ? (
-          <EmptyCoursesState onCreateCourse={handleCreateCourse} />
+          <EmptyCoursesState/>
         ) : filteredCourses.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
             No courses found for your filters.
@@ -177,7 +202,7 @@ const InstructorDashboard = () => {
         ) : (
           <CoursesTable
             courses={filteredCourses}
-            onView={(c) => console.log("View", c.id)}
+            onView={handleViewCourse}
             onEdit={(c) => console.log("Edit", c.id)}
             onAnalytics={(c) => console.log("Analytics", c.id)}
             onDelete={handleDeleteCourse}
