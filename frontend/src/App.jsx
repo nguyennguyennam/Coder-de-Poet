@@ -15,6 +15,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import GoogleCallbackHandler from './components/auth/GoogleCallbackHandler';
 import CourseDetail from './pages/course/CourseDetail';
 import CourseList from './pages/course/CourseList';
+import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import CourseDetailModal from './pages/instructor/CourseDetailModal';
  
 // Component để xử lý redirect dựa trên role
 function RoleBasedRedirect() {
@@ -69,6 +71,15 @@ function Layout() {
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackHandler />} />
           <Route path="/courses" element={<CourseList />}/>
+
+          <Route 
+            path="/instructor/dashboard" 
+            element={ 
+              <ProtectedRoute>
+                <InstructorDashboard />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Protected admin routes */}
           <Route 

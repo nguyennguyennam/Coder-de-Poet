@@ -1,5 +1,6 @@
 import { 
     BadRequestException,
+    ForbiddenException,
     Injectable,
     NotFoundException
 } from '@nestjs/common';
@@ -41,11 +42,15 @@ export class CoursesService {
         return course;
     }
 
-    async update(id: string, dto: UpdateCourseDto) {
-        const exists = await this.repo.findById(id);
-        if (!exists) throw new NotFoundException('Course not found');
+    async update(id: string, dto: UpdateCourseDto, userId: any) {
+        const course = await this.repo.findById(id);
+        if (!course) throw new NotFoundException('Course not found');
 
-        if (dto.slug && dto.slug !== exists.slug) {
+        if (course.instructorId !== userId) {
+            throw new BadRequestException('You are not the instructor of this course');
+        }
+
+        if (dto.slug && dto.slug !== course.slug) {
             const slugCourse = await this.repo.findBySlug(dto.slug);
             if (slugCourse && slugCourse.id !== id)
                 throw new BadRequestException('Course with this slug already exists');
@@ -53,9 +58,15 @@ export class CoursesService {
         return this.repo.update(id, dto);
     }
     
-    async remove(id: string) {
+    async remove(id: string, userId: any) {
+        const course = await this.repo.findById(id);
+        if (!course) throw new NotFoundException('Course not found');
+
+        if (course.instructorId !== userId) {
+            throw new ForbiddenException('You can only delete your own courses');
+        }
+
         const deleted = await this.repo.delete(id);
-        if (!deleted) throw new NotFoundException('Course not found');
         return deleted;
     }
 

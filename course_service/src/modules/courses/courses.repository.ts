@@ -38,7 +38,7 @@ export class CoursesRepository {
       dto.accessType,
       dto.status ?? 'draft',
       dto.thumbnailUrl ?? null,
-      0
+      dto.updatedAt ?? null,
     ];
 
     const { rows } = await this.pool.query(query, values);
@@ -284,5 +284,13 @@ export class CoursesRepository {
       skip,
       take,
     };
+  }
+
+  async findByInstructorId(instructorId: string) {
+    const { rows } = await this.pool.query(
+      `SELECT * FROM courses WHERE instructor_id = $1 ORDER BY updated_at DESC NULLS LAST`,
+      [instructorId],
+    );
+    return rows;
   }
 }

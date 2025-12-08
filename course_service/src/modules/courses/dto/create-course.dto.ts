@@ -1,4 +1,5 @@
 import {
+    IsDateString,
     IsIn,
     IsNotEmpty,
     IsOptional,
@@ -43,4 +44,8 @@ export class CreateCourseDto {
     @IsOptional()
     @IsUrl()
     thumbnailUrl?: string;
+
+    @IsOptional()
+    @IsDateString()
+    updatedAt?: Date;
 }
