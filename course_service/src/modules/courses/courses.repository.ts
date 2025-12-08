@@ -210,7 +210,6 @@ export class CoursesRepository {
     return rows[0] ?? null;
   }
 
-<<<<<<< HEAD
 
   // This function returns the list of trending tags based on tags list of each course
   async getTrendingTags () {
@@ -225,7 +224,9 @@ export class CoursesRepository {
       `;
     const { rows } =  await this.pool.query(query);
     return rows ?? null;
-=======
+  }
+
+
   // Return top N courses for a given category ordered by student_count desc
   async getTopByCategory(categoryId: string, limit = 4) {
     const { rows } = await this.pool.query(
@@ -300,6 +301,5 @@ export class CoursesRepository {
       skip,
       take,
     };
->>>>>>> 1d774e27c06a721ddabe3dd334f3fd806cfdcc60
   }
 }

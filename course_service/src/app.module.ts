@@ -8,6 +8,7 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { SearchModule } from './modules/search/search.module';
+import { LessonModule } from './modules/lesson/lesson.module';
 
 @Module({
   imports: [
@@ -23,11 +24,12 @@ import { SearchModule } from './modules/search/search.module';
       ssl: { rejectUnauthorized: false },
     }),
     DatabaseModule,
-    CategoryModule, // dùng TypeORM
-    CoursesModule,  // dùng DatabaseModule + pg Pool
+    CategoryModule, 
+    CoursesModule,  
     LessonsModule,
     EnrollmentsModule,
-    SearchModule
+    SearchModule,
+    LessonModule
   ],
 })
 export class AppModule {}
