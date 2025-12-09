@@ -139,4 +139,19 @@ export class CoursesService {
         if (!exists) throw new NotFoundException('Course not found');
     }
 
+    async findByInstructor(id: string) {
+        return await this.repo.findByInstructorId(id);
+    }
+    async findOneWithOwnershipCheck(id: string, instructorId?: string) {
+    const course = await this.findOne(id);
+    
+    let isOwner = false;
+        if (instructorId) {
+            isOwner = await this.repo.checkInstructorOwnership(id, instructorId);
+        }
+        
+        return {
+            isAccess: isOwner
+        };
+    }
 }
