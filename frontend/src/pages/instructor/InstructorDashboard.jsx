@@ -23,6 +23,7 @@ const InstructorDashboard = () => {
 
   const [showAddLesson, setShowAddLesson] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [preSelectedCourse, setPreSelectedCourse] = useState(null);
 
   useEffect(() => {
     console.log("Fetching courses for instructor:", instructorId.id);
@@ -195,7 +196,6 @@ const InstructorDashboard = () => {
             </button>
 
           </header>
-
           {showAddLesson && (
             <InstructorAddLesson
               onClose={() => setShowAddLesson(false)}
