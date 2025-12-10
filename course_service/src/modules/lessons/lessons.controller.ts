@@ -23,6 +23,12 @@ export class LessonsController {
     return this.lessonsService.listByCourse(courseId, s, t);
   }
 
+  @UseGuards(AuthGuard)
+  @Get('/instructor/:courseId')
+  getLessonsForInstructor(@Param('courseId') courseId: string) {
+    return this.lessonsService.listByCourse(courseId);
+  }
+
   @UseGuards(AuthGuard, EnrolledGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -37,11 +43,5 @@ export class LessonsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.lessonsService.remove(id);
-  }
-
-  @UseGuards(AuthGuard)
-  @Get('/instructor/:courseId')
-  getLessonsForInstructor(@Param('courseId') courseId: string) {
-    return this.lessonsService.listByCourse(courseId);
   }
 }

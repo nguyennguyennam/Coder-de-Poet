@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Navigation_PC from "./components/layout/NavigationPC";
-import Navigation_Mobile from "./components/layout/NavigationMobile";
+import NavigationPC from "./components/layout/NavigationPC";
+import NavigationMobile from "./components/layout/NavigationMobile";
 import Home from "./pages/public/Home";
 import SignIn from "./pages/auth/Signin";
 import SignUp from './pages/auth/Signup';
@@ -59,10 +59,10 @@ function Layout() {
       {!hideNavigation && (
         <>
           <div className="absolute md:hidden w-full p-2  z-60 sticky">
-            <Navigation_Mobile />
+            <NavigationMobile />
           </div>
           <div className="hidden md:block">
-            <Navigation_PC />
+            <NavigationPC />
           </div>
         </>
       )}
