@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -10,6 +10,7 @@ export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}
 
   @Post()
+  @UseGuards(AuthGuard)
   create(@Body() dto: CreateLessonDto) {
     return this.lessonsService.create(dto);
   }
@@ -36,5 +37,11 @@ export class LessonsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.lessonsService.remove(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/instructor/:courseId')
+  getLessonsForInstructor(@Param('courseId') courseId: string) {
+    return this.lessonsService.listByCourse(courseId);
   }
 }
