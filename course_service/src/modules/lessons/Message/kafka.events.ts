@@ -46,7 +46,8 @@ export class AiKafkaEventsController {
       console.log("Quiz generation completed for lesson_id: " + event.lesson_id);
       this.quizStore.set(event.lesson_id, {
         success: true,
-        quizRaw: event.quiz_questions
+        quizRaw: event.quiz_questions,
+        tag: event.tag
       });
     } else {
       this.quizStore.set(event.lesson_id, {

@@ -9,6 +9,7 @@ export interface GenerateLessonQuizCommand {
     course_id: string;
     lesson_name: string;
     video_url: string;
+    source_type: string; // "cloudinary", "youtube"
 }
 
 export interface LessonQuizGeneratedEvent {
@@ -16,4 +17,5 @@ export interface LessonQuizGeneratedEvent {
     course_id?: string;
     status: "COMPLETED" | "FAILED";
     quiz_questions?: QuestionDto[];
+    tag?: string[];
 }

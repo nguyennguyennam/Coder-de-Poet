@@ -7,10 +7,7 @@ Responsibilities:
 - Initialize Kafka producer/consumer on startup.
 - Continuously consume `GenerateLessonQuizCommand` messages.
 - For each message:
-    1. Download video
-    2. Generate transcript via Whisper
-    3. Generate quiz via LLM
-    4. Publish `LessonQuizGeneratedEvent` result back to Kafka.
+    - Call the Extractor Strategy pattern to decide which strategy to apply
 """
 
 import asyncio
@@ -25,8 +22,10 @@ from .message_service import (
     parse_generate_lesson_quiz_command,
     send_lesson_quiz_generated_event,
 )
-from .transcript_service import download_video, transcribe_video, delete_video
-from .quiz_service import generate_quiz_from_transcript
+
+from .strategy.context import StrategyContext
+from .transcript_service import delete_video
+import os
 
 
 logger = logging.getLogger("ai_service")
@@ -86,6 +85,7 @@ async def consume_loop(consumer):
     - Publish event
     """
     logger.info("Kafka consumer loop started.")
+    context = StrategyContext()
 
     try:
         async for msg in consumer:
@@ -98,30 +98,21 @@ async def consume_loop(consumer):
             cmd: Optional[GenerateLessonQuizCommand] = None
 
             try:
-                # 1. Parse command
+                #1. 
                 cmd = parse_generate_lesson_quiz_command(raw_value)
 
-                # 2. Download video
-                loop = asyncio.get_event_loop()
-                video_path = await loop.run_in_executor(
-                    None, download_video, cmd.video_url, cmd.lesson_name
-                )
+                #2. Execute strategy pattern to get extractor
+                result = await context.execute_strategy(cmd)
 
-                # 3. Generate transcript
-                transcript = await loop.run_in_executor(
-                    None, transcribe_video, video_path, cmd.language
-                )
-
-                # 4. Generate quiz
-                quiz_questions = generate_quiz_from_transcript(transcript, cmd)
-
-                # 5. Build success event
+                # 3. Build success event
                 event = LessonQuizGeneratedEvent(
                     lesson_id=cmd.lesson_id,
                     course_id=cmd.course_id,
                     status="COMPLETED",
-                    transcript=transcript,
-                    quiz_questions=quiz_questions,
+                    transcript=result.get("transcript"),
+                    quiz_questions=result.get("quiz"),
+                    tag = result.get("tags"),
+                    #category = result.get("category")
                 )
 
             except Exception:
@@ -130,6 +121,8 @@ async def consume_loop(consumer):
                     lesson_id=cmd.lesson_id if cmd else "unknown",
                     course_id=cmd.course_id if cmd else None,
                     status="FAILED",
+                    tag=[]
+
                 )
 
             # 6. Publish event
@@ -137,8 +130,8 @@ async def consume_loop(consumer):
 
             # 7. Clean up downloaded video
             try:
-                if 'video_path' in locals():
-                    delete_video(video_path)
+                if cmd.video_url in locals():
+                    delete_video(cmd.video_url)
             except Exception:
                 logger.warning("Failed to delete video file.", exc_info=True)
 
