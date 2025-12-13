@@ -11,6 +11,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AiKafkaEventsController } from './Message/kafka.events';
 import { QuizStore } from './store/quiz.store';
 import { AiKafkaClient } from './Message/kafka.client';
+import { CoursesModule } from '../courses/courses.module';
 
 
 const brokers =
@@ -19,6 +20,7 @@ const brokers =
 
 @Module({
   imports: [DatabaseModule, 
+    CoursesModule,
     JwtModule.register({}),
     ClientsModule.register([
       {

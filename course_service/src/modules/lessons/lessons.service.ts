@@ -54,7 +54,7 @@ export class LessonsService {
             course_id: dto.course_id,
             lesson_name: dto.lesson_name,
             video_url: dto.video_url,
-
+            source_type: dto.source_type
         };
 
         await this.aiKafkaClient.sendGenerateLessonQuizCommand(command);
