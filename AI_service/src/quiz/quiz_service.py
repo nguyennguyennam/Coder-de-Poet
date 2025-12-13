@@ -6,8 +6,8 @@ Generate quiz using Groq Flash 2.5 (OpenAI-compatible API).
 import json
 from typing import List
 
-from openai import OpenAI
-from .models import Question, GenerateLessonQuizCommand
+from openai import AsyncOpenAI
+from ..models import Question, GenerateLessonQuizCommand
 import logging
 import re
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Groq LLM Client ---
-client = OpenAI(
+client = AsyncOpenAI(
     api_key="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",
     base_url="https://api.groq.com/openai/v1",
 )
@@ -112,7 +112,7 @@ def _safe_parse_json(raw_text: str) -> dict:
         raise e
 
 
-def generate_quiz_from_transcript(
+async def generate_quiz_from_transcript(
     transcript: str,
     cmd: GenerateLessonQuizCommand
 ) -> List[Question]:
@@ -120,7 +120,7 @@ def generate_quiz_from_transcript(
 
     user_prompt = _build_user_prompt(transcript, cmd)
 
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model="llama-3.3-70b-versatile",  
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},

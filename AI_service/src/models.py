@@ -24,7 +24,7 @@ class GenerateLessonQuizCommand (BaseModel):
     
     difficulty: str = "medium"  # "easy", "medium", "hard"
     question_type : List[str] = ["multiple_choice", "true_false"]  # "multiple_choice", "true_false"
-    #source_type: str 
+    source_type: str = ["cloudinary", "youtube"]
 
 
 class LessonQuizGeneratedEvent (BaseModel):
@@ -33,5 +33,6 @@ class LessonQuizGeneratedEvent (BaseModel):
     status: str # "COMPLETED" or "FAILED
     transcript: Optional[str] = None
     quiz_questions: Optional[List[Question]] = None
+    tag: Optional[list[str]] = None
 
 
