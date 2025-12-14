@@ -65,6 +65,7 @@ export class LessonsController {
 
         return {
           status: "done",
+          tag: payload.tag,
           quiz: payload.quizRaw
         };
       }

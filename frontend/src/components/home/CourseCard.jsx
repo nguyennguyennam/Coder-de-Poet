@@ -114,23 +114,6 @@ const CourseCard = ({ course }) => {
           </div>
         </div>
       </div>
-
-      {/* PROGRESS BAR (if needed) */}
-      {course.progress !== undefined && (
-        <>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-            <div
-              className="bg-green-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${course.progress}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Progress</span>
-            <span>{course.progress}%</span>
-          </div>
-        </>
-      )}
     </NavLink>
   );
 };

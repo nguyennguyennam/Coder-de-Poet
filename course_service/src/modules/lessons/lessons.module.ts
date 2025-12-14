@@ -20,6 +20,7 @@ const brokers =
 
 @Module({
   imports: [DatabaseModule, 
+    CoursesModule,
     JwtModule.register({}),
     ClientsModule.register([
       {
