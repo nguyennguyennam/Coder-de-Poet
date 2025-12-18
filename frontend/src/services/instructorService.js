@@ -130,6 +130,26 @@ const instructorService = {
         });
     return response.data;
     },
+  
+  generateAIQuiz: async (payload) => {
+    try {
+      const token = authService.getStoredToken();
+      console.log("Generating AI quiz with payload:", payload);
+      // Gọi endpoint AI quiz generate
+      const response = await apiCourse.post(
+        '/lessons/quiz-generate',
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      console.log("AI Quiz generated:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error generating AI quiz:', error);
+      throw error;
+    }
+  },
 }
 
 export default instructorService;
