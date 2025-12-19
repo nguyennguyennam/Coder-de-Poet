@@ -1,7 +1,7 @@
 // quiz.repository.ts
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { Pool } from 'pg';
-import { CreateQuizDto } from './dto/create-quiz.dto';
+import { CreateQuizDto, QuestionWithAnswerDto } from './dto/create-quiz.dto';
 
 interface FindOptions {
   where?: Record<string, any>;
@@ -546,5 +546,47 @@ export class QuizRepository {
       console.warn('Failed to parse JSON:', jsonString.substring(0, 100), error);
       return null;
     }
+  }
+  
+
+  //This function below grades a quiz submission and returns the score.
+  /*
+    Input: Array of questions Id and user answers respectively.
+    Output: Total score based on correct answers.
+  */
+
+    async gradeQuizSubmission( questionWithAnswers: Record<string, string>) {
+      let totalScore = 0;
+
+      const questionIds = Object.keys(questionWithAnswers);
+      if (questionIds.length === 0) {
+        return {
+          totalScore: 0,
+          totalQuestions: 0,
+          foundQuestions: 0
+        }
+      }
+      // Loop through each question to get correct answers and points
+      const query = `
+        SELECT id, correct_answer, points 
+        from  questions
+        where id = ANY($1::uuid[])
+      `;
+
+      const {rows } = await this.pool.query(query, [questionIds]);
+
+      //Calculate total score
+      for (const row of rows) {
+        const userAnswer = questionWithAnswers[row.id];
+        if (userAnswer && row.correct_answer == userAnswer) {
+          totalScore += Number(row.points ?? 0);
+        }
+      }
+
+      return {
+        totalScore,
+        totalQuestions: questionIds.length,
+        foundQuestions: rows.length
+      };
   }
 }

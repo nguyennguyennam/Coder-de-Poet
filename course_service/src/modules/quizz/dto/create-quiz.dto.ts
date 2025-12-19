@@ -42,3 +42,7 @@ export class CreateQuizDto {
   @Type(() => CreateQuestionDto)
   questions: CreateQuestionDto[];
 }
+
+  export class QuestionWithAnswerDto {
+    [questionId: string]: string; // questionId: userAnswer
+  }
