@@ -53,11 +53,11 @@ export class QuizController {
     @Query('title') title?: string,
   ) {
     if (courseId && !page && !limit && !status && !title) {
-      return this.quizService.findByCourseId(+courseId);
+      return this.quizService.findByCourseId(courseId);
     }
     
     const filters = {
-      lessonId: courseId ? +courseId : undefined,
+      lessonId: courseId ? courseId : undefined,
       status,
       title,
     };
@@ -66,18 +66,18 @@ export class QuizController {
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: string) {
+  async findOne(@Param('id') id: string) {
     return this.quizService.findOne(id);
   }
 
   @Get(':id/stats')
-  async getQuizStats(@Param('id', ParseIntPipe) id: string) {
+  async getQuizStats(@Param('id') id: string) {
     return this.quizService.getQuizStats(id);
   }
 
   @Put(':id')
   async update(
-    @Param('id', ParseIntPipe) id: string,
+    @Param('id') id: string,
     @Body() updateQuizDto: UpdateQuizDto,
   ) {
     // Validate dữ liệu
@@ -91,13 +91,13 @@ export class QuizController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseIntPipe) id: string) {
+  async remove(@Param('id') id: string) {
     await this.quizService.remove(id);
   }
 
   @Post(':id/questions')
   async addQuestions(
-    @Param('id', ParseIntPipe) quizId: string,
+    @Param('id') quizId: string,
     @Body() addQuestionsDto: AddQuestionsDto,
   ) {
     return this.quizService.addQuestionsToQuiz(quizId, addQuestionsDto.questions);
@@ -106,46 +106,51 @@ export class QuizController {
   @Delete(':quizId/questions/:questionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeQuestionFromQuiz(
-    @Param('quizId', ParseIntPipe) quizId: string,
-    @Param('questionId', ParseIntPipe) questionId: string,
+    @Param('quizId') quizId: string,
+    @Param('questionId') questionId: string,
   ) {
     await this.quizService.removeQuestionFromQuiz(quizId, questionId);
   }
 
   @Delete(':id/questions')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async clearQuizQuestions(@Param('id', ParseIntPipe) id: string) {
+  async clearQuizQuestions(@Param('id') id: string) {
     await this.quizService.remove(id);
   }
 
   @Patch(':id/publish')
-  async publishQuiz(@Param('id', ParseIntPipe) id: string) {
+  async publishQuiz(@Param('id') id: string) {
     return this.quizService.publishQuiz(id);
   }
 
   @Patch(':id/unpublish')
-  async unpublishQuiz(@Param('id', ParseIntPipe) id: string) {
+  async unpublishQuiz(@Param('id') id: string) {
     return this.quizService.unpublishQuiz(id);
   }
 
   @Get(':id/submissions')
-  async getQuizSubmissions(@Param('id', ParseIntPipe) id: string) {
+  async getQuizSubmissions(@Param('id') id: string) {
     return this.quizService.getQuizSubmissions(id);
   }
 
   @Get('course/:courseId')
-  async findByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+  async findByCourse(@Param('courseId') courseId: string) {
     return this.quizService.findByCourseId(courseId);
   }
 
   @Get('count/:courseId')
-  async countByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+  async countByCourse(@Param('courseId') courseId: string) {
     return this.quizService.count({ course_id: courseId });
   }
 
   @Get('exists/:id')
-  async exists(@Param('id', ParseIntPipe) id: number) {
+  async exists(@Param('id') id: string) {
     const exists = await this.quizService.exists(id);
     return { exists };
+  }
+
+  @Get('lesson/:lessonId')
+  async findByLessonWithQuestions(@Param('lessonId') lessonId: string) {
+    return this.quizService.findByLessonWithQuestions(lessonId);
   }
 }

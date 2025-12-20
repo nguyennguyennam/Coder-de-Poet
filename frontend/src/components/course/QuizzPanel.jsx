@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const QuizPanel = ({ courseId, videoUrl, onClose }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -10,45 +11,58 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Gọi backend Flask để tạo quiz từ video → quiz
-  useEffect(() => {
-    const generateQuiz = async () => {
-      if (!videoUrl) return;
+ useEffect(() => {
+  const fetchQuiz = async () => {
+    if (!courseId) return;
 
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
-      try {
-        const res = await fetch("http://127.0.0.1:5000/generate_quiz", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: videoUrl }),
-        });
+    try {
+      const res = await fetch(
+        `http://localhost:3001/quizzes/lesson/${courseId}`
+      );
 
-        if (!res.ok) throw new Error("Không thể tạo quiz từ video");
+      if (!res.ok) throw new Error("Không lấy được quiz");
 
-        const data = await res.json();
-        const questions = parseQuizFromText(data.quiz);
+      console.log(res)
 
-        if (questions.length === 0) throw new Error("AI không tạo được câu hỏi nào");
+      const quizzes = await res.json();
+      console.log(quizzes);
+      if (!quizzes.length) throw new Error("Bài học chưa có quiz");
 
-        setQuizData({
-          courseId,
-          title: "Bài kiểm tra tự động từ video",
-          totalQuestions: questions.length,
-          timeLimit: 600,
-          passingScore: 70,
-          questions,
-        });
-      } catch (err) {
-        setError(err.message || "Lỗi khi tạo quiz");
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Lấy quiz đầu tiên (hoặc bạn có thể cho chọn)
+      const quiz = quizzes[0];
 
-    generateQuiz();
-  }, [courseId, videoUrl]);
+      const questions = quiz.questions.map((q, idx) => ({
+        id: q.id,
+        question: q.content,
+        options: q.options,
+        correctAnswer: q.options.findIndex(
+          (opt) => opt === q.correct_answer
+        ),
+        explanation: "Đáp án đúng: " + q.correct_answer,
+      }));
+
+      setQuizData({
+        courseId,
+        title: quiz.title,
+        totalQuestions: questions.length,
+        timeLimit: quiz.duration * 60,
+        passingScore: 70,
+        questions,
+      });
+
+      setTimeLeft(quiz.duration * 60);
+    } catch (err) {
+      setError(err.message || "Lỗi khi tải quiz");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchQuiz();
+}, [courseId]);
 
   // Parse text từ GPT thành mảng câu hỏi chuẩn
   const parseQuizFromText = (text) => {
@@ -224,7 +238,11 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
                   passed ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
                 }`}
               >
-                {passed ? "Check" : "Cross"}
+              {passed ? (
+                <FaCheckCircle color="green" size={20} />
+              ) : (
+                <FaTimesCircle color="red" size={20} />
+              )}
               </div>
               <h3 className={`text-4xl font-bold mb-4 ${passed ? "text-green-600" : "text-red-600"}`}>
                 {passed ? "Chúc mừng! Bạn đã ĐẠT!" : "Chưa đạt yêu cầu"}
@@ -270,7 +288,7 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
                         className={`w-8 h-8 rounded-full border-2 mr-4 flex items-center justify-center font-bold
                           ${selectedAnswer === i ? "bg-[#1B3C53] text-white" : "border-gray-400"}`}
                       >
-                        {selectedAnswer === i ? "Check" : String.fromCharCode(65 + i)}
+                        {selectedAnswer === i ? <FaCheckCircle color="green" size={20} /> : String.fromCharCode(65 + i)}
                       </div>
                       <span>{opt}</span>
                     </div>
