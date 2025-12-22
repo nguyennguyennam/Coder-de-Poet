@@ -90,7 +90,7 @@ function Layout() {
           />
 
           <Route 
-            path="/instructor/lesson/:lessonId" 
+            path="/instructor/courses/:courseId/lesson/:lessonId" 
             element={ 
               <InstructorRoute>
                 <LessonDetailPageRoute />

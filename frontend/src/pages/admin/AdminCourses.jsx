@@ -213,60 +213,65 @@ function AdminCourses() {
           <div className="text-sm text-gray-500">Total: {courses.length}</div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto divide-y divide-gray-200">
-          {filteredCourses.map((course) => (
-            <div key={course.id} className="px-6 py-4 hover:bg-gray-50">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{course.title}</h3>
-                  <div className="flex flex-wrap gap-4 mt-1 text-sm text-gray-600">
-                    <span>
-                      Status:
-                      <span className={`ml-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                        ((course.status||'').toLowerCase()==='approved' || (course.status||'').toLowerCase()==='published') ? 'bg-green-100 text-green-800' :
-                        ((course.status||'').toLowerCase()==='pending' || (course.status||'').toLowerCase()==='draft') ? 'bg-amber-100 text-amber-800' :
-                        ((course.status||'').toLowerCase()==='rejected') ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {course.status || 'draft'}
+        <div className="max-h-[65vh] overflow-y-auto divide-y divide-gray-200">
+          {filteredCourses.map((course) => {
+            const status = (course.status || course.approval_status || '').toLowerCase();
+            const isPublished = status === 'published' || status === 'approved';
+            return (
+              <div key={course.id} className="px-6 py-4 hover:bg-gray-50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{course.title}</h3>
+                    <div className="flex flex-wrap gap-4 mt-1 text-sm text-gray-600">
+                      <span>
+                        Status:
+                        <span className={`ml-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                          status==='approved' || status==='published' ? 'bg-green-100 text-green-800' :
+                          status==='pending' || status==='draft' ? 'bg-amber-100 text-amber-800' :
+                          status==='rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {course.status || course.approval_status || 'draft'}
+                        </span>
                       </span>
-                    </span>
-                    {typeof course.student_count === 'number' && (
-                      <span>Students: {course.student_count}</span>
-                    )}
-                    {course.category_id && <span>Category ID: {course.category_id}</span>}
+                      {typeof course.student_count === 'number' && (
+                        <span>Students: {course.student_count}</span>
+                      )}
+                      {course.category_id && <span>Category ID: {course.category_id}</span>}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">
-                    Updated: {course.updated_at ? new Date(course.updated_at).toLocaleString() : '—'}
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">
+                      Updated: {course.updated_at ? new Date(course.updated_at).toLocaleString() : '—'}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(course.id)}
+                      className="mt-2 bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
+                    >
+                      Delete
+                    </button>
+                    <div className="mt-2 flex gap-2 justify-end">
+                      {!isPublished && (
+                        <button
+                          onClick={() => handleApprove(course.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded"
+                        >
+                          Approve
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleReject(course.id)}
+                        className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 rounded"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => toggleLessons(course.id)}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-3 py-1 rounded"
+                      >
+                        {expanded[course.id] ? 'Hide Lessons' : 'View Lessons'}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(course.id)}
-                    className="mt-2 bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
-                  >
-                    Delete
-                  </button>
-                  <div className="mt-2 flex gap-2 justify-end">
-                    <button
-                      onClick={() => handleApprove(course.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(course.id)}
-                      className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 rounded"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => toggleLessons(course.id)}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-3 py-1 rounded"
-                    >
-                      {expanded[course.id] ? 'Hide Lessons' : 'View Lessons'}
-                    </button>
-                  </div>
-                </div>
               </div>
 
               {expanded[course.id] && (
@@ -291,7 +296,13 @@ function AdminCourses() {
                               <td className="px-4 py-2 text-sm text-gray-900">{l.title || l.name || `Lesson ${l.id}`}</td>
                               <td className="px-4 py-2 text-sm">{l.duration || '—'}</td>
                               <td className="px-4 py-2 text-sm text-gray-500">{l.updated_at ? new Date(l.updated_at).toLocaleString() : '—'}</td>
-                              <td className="px-4 py-2 text-right">
+                              <td className="px-4 py-2 text-right space-x-2 whitespace-nowrap">
+                                <a
+                                  href={`/instructor/courses/${course.id}/lesson/${l.id}`}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
+                                >
+                                  Open
+                                </a>
                                 <button
                                   onClick={() => handleDeleteLesson(course.id, l.id)}
                                   className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
@@ -313,7 +324,8 @@ function AdminCourses() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {filteredCourses.length === 0 && (
             <div className="px-6 py-10 text-center text-gray-500">No courses found for this instructor.</div>

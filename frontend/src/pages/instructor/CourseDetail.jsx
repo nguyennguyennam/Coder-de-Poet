@@ -114,12 +114,8 @@ const CourseDetailRoute = () => {
 
   // Hàm mở trang chi tiết lesson
   const openLessonDetail = (lesson) => {
-    // Lưu thông tin lesson và course vào sessionStorage
-    sessionStorage.setItem("currentLesson", JSON.stringify(lesson));
-    sessionStorage.setItem("currentCourse", JSON.stringify(course));
-    
-    // Navigate đến trang chi tiết
-    navigate(`/instructor/lesson/${lesson.id}`);
+    // Navigate đến trang chi tiết với courseId và lessonId
+    navigate(`/instructor/courses/${courseId}/lesson/${lesson.id}`);
   };
 
   if (courseLoading) {
@@ -136,10 +132,10 @@ const CourseDetailRoute = () => {
         <div className="text-center">
           <p className="text-gray-500 mb-4">Course not found</p>
           <button
-            onClick={() => navigate("/instructor/dashboard")}
+            onClick={() => navigate(-1)}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            Back to Dashboard
+            Back
           </button>
         </div>
       </div>
@@ -151,10 +147,10 @@ const CourseDetailRoute = () => {
       <div className="flex-1 mx-auto bg-gray-50 py-6 px-4 max-w-6xl flex flex-col">
         {/* Back */}
         <button
-          onClick={() => navigate("/instructor/dashboard")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-6 font-medium"
         >
-          <FiArrowLeft /> Back to Dashboard
+          <FiArrowLeft /> Back
         </button>
         
 
@@ -262,7 +258,7 @@ const CourseDetailRoute = () => {
               {/* Footer */}
           <div className="flex justify-end gap-3 pt-8 border-t border-gray-100 mt-8">
             <button
-              onClick={() => navigate("/instructor/dashboard")}
+              onClick={() => navigate(-1)}
               className="px-5 py-2.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
             >
               Close

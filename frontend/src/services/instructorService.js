@@ -173,6 +173,19 @@ const instructorService = {
     }
   },
 
+  deleteQuestionFromQuiz: async (quizId, questionId) => {
+    try {
+      const token = authService.getStoredToken();
+      const response = await apiCourse.delete(`/quizzes/${quizId}/questions/${questionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting question from quiz:', error);
+      throw error;
+    }
+  },
+
   addQuestionsToQuiz: async (quizId, questions) => {
     try {
       const token = authService.getStoredToken();

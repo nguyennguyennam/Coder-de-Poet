@@ -53,7 +53,7 @@ const InstructorDashboard = () => {
       }
     };
     fetchCourses();
-  }, []);
+  }, [instructorId.id]);
 
 
   const handleViewCourse = (course) => {

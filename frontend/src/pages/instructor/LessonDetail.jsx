@@ -10,6 +10,7 @@ import {
   FiCheckCircle,
   FiArrowLeft,
   FiSave,
+  FiPlus,
 } from "react-icons/fi";
 import instructorService from "../../services/instructorService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -17,7 +18,7 @@ import ProfileSidebar from "../../components/home/ProfileSideBar";
 import CreateQuizPage from "./CreateQuizPage";
 
 const LessonDetailPage = () => {
-  const { lessonId } = useParams();
+  const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
@@ -51,7 +52,7 @@ const LessonDetailPage = () => {
 
   useEffect(() => {
     fetchLessonData();
-  }, [lessonId]);
+  }, [lessonId, courseId]);
 
   useEffect(() => {
     const fetchMyCourses = async () => {
@@ -70,24 +71,54 @@ const LessonDetailPage = () => {
   const fetchLessonData = async () => {
     try {
       setLoading(true);
-      const storedLesson = JSON.parse(sessionStorage.getItem("currentLesson"));
-      const storedCourse = JSON.parse(sessionStorage.getItem("currentCourse"));
-      if (storedLesson) {
-        // Normalize all snake_case fields to camelCase
-        const normalizedLesson = {
-          ...storedLesson,
-          contentUrl: storedLesson.content_url,
-          contentBody: storedLesson.content_body,
-          contentType: storedLesson.content_type,
-          courseId: storedLesson.course_id,
-          updatedAt: storedLesson.updated_at,
-        };
-        setLesson(normalizedLesson);
-        setEditData(normalizedLesson);
+      // Prefer instructor-safe endpoints to avoid EnrolledGuard 403 on /lessons/:id
+      let normalizedLesson = null;
+      if (courseId) {
+        const lessons = await instructorService.getLessonsByCourse(courseId);
+        const found = (lessons || []).find(l => l.id === lessonId);
+        if (found) {
+          normalizedLesson = {
+            ...found,
+            contentUrl: found.content_url ?? found.contentUrl,
+            contentBody: found.content_body ?? found.contentBody,
+            contentType: found.content_type ?? found.contentType,
+            courseId: found.course_id ?? found.courseId ?? courseId,
+            updatedAt: found.updated_at ?? found.updatedAt,
+          };
+        }
       }
-      if (storedCourse) {
-        setCourse(storedCourse);
+      // Fallback if not found via course listing (may 403 if not enrolled)
+      if (!normalizedLesson) {
+        try {
+          const rawLesson = await instructorService.getLessonById(lessonId);
+          normalizedLesson = {
+            ...rawLesson,
+            contentUrl: rawLesson.content_url ?? rawLesson.contentUrl,
+            contentBody: rawLesson.content_body ?? rawLesson.contentBody,
+            contentType: rawLesson.content_type ?? rawLesson.contentType,
+            courseId: rawLesson.course_id ?? rawLesson.courseId ?? courseId,
+            updatedAt: rawLesson.updated_at ?? rawLesson.updatedAt,
+          };
+        } catch (e) {
+          console.warn("Fallback getLessonById failed (possibly 403)", e);
+        }
       }
+      if (!normalizedLesson) throw new Error("Lesson not found or not accessible");
+      setLesson(normalizedLesson);
+      setEditData(normalizedLesson);
+
+      // Load course by courseId param when available
+      const cId = normalizedLesson.courseId || courseId;
+      if (cId) {
+        try {
+          const courseData = await instructorService.getCourseId(cId);
+          setCourse(courseData);
+        } catch (e) {
+          console.warn("Could not load course details for", cId, e);
+        }
+      }
+
+      // Fetch quizzes for this lesson
       const quizzesData = await instructorService.getQuizzesByLesson(lessonId);
       const normalizedQuizzes = (quizzesData || []).map((q) => ({
         ...q,
@@ -223,7 +254,262 @@ const LessonDetailPage = () => {
   console.log("Rendered LessonDetailPage with lesson:", lesson);
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-gray-50">
+    <div className="flex w-full h-screen overflow-hidden">
+      <div className="flex-1 mx-auto bg-gray-50 py-6 px-4 max-w-6xl flex flex-col">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-6 font-medium"
+        >
+          <FiArrowLeft /> Back
+        </button>
+
+        {/* Main card */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          {/* Top section with lesson info and actions */}
+          <div className="mx-auto max-w-6xl px-4 py-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-gray-800 mb-1">{lesson?.title}</h1>
+                {course && (
+                  <p className="text-sm text-gray-500">Khóa học: <span className="font-semibold">{course.title}</span></p>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setShowQuizModal(true)}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium whitespace-nowrap"
+                >
+                  <FiPlus /> Tạo Quiz
+                </button>
+                {!isEditing ? (
+                  <button
+                    onClick={handleEditToggle}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium"
+                  >
+                    <FiEdit /> Chỉnh sửa
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveLesson}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                    >
+                      Lưu
+                    </button>
+                    <button
+                      onClick={handleEditToggle}
+                      className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg text-sm font-medium transition"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-6 pb-6 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiFileText className="text-blue-500" /> {lesson?.content_type || 'N/A'}
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiCalendar className="text-green-500" /> Cập nhật: {lesson?.updated_at ? new Date(lesson.updated_at).toLocaleDateString() : "N/A"}
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiClock className="text-orange-500" /> Thời lượng: {lesson?.duration || 'N/A'}
+              </div>
+            </div>
+
+            {/* Content editing and display */}
+            <div className="bg-white rounded-lg shadow-md border border-gray-100 p-6 mb-6">
+              {/* Title */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editData.title || ''}
+                    onChange={(e) => handleEditChange('title', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <h2 className="text-2xl font-bold text-gray-800">{lesson?.title}</h2>
+                )}
+              </div>
+
+              {/* Video Player */}
+              {(editData.contentUrl || lesson?.contentUrl) && (
+                <div className="bg-gray-900 rounded-lg overflow-hidden mb-6">{renderVideoPlayer()}</div>
+              )}
+
+              {/* Video URL */}
+              {isEditing && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
+                  <input
+                    type="text"
+                    value={editData.contentUrl || ''}
+                    onChange={(e) => handleEditChange('contentUrl', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://youtube.com/... hoặc Cloudinary URL"
+                  />
+                </div>
+              )}
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
+                {isEditing ? (
+                  <textarea
+                    value={editData.contentBody || ''}
+                    onChange={(e) => handleEditChange('contentBody', e.target.value)}
+                    rows={5}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    {lesson?.contentBody ? (
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{lesson.contentBody}</p>
+                    ) : (
+                      <p className="text-gray-400 italic">Chưa có mô tả</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quizzes Section */}
+            <div className="bg-white rounded-lg shadow-md border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-800">Quiz của bài học</h3>
+                <span className="text-sm text-gray-500">{quizzes.length} quiz</span>
+              </div>
+              {quizzes.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  <p className="mb-2">Chưa có quiz nào cho bài học này</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {quizzes.map((quiz, index) => (
+                    <div key={quiz.id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-800">{quiz.title}</h4>
+                            {quiz.status === 'published' && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Published</span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-gray-600 mb-3">
+                            <div className="flex items-center gap-1">
+                              <FiFileText className="text-gray-400" />
+                              <span>{quiz.questions?.length || 0} câu hỏi</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <FiClock className="text-gray-400" />
+                              <span>{quiz.duration || 15} phút</span>
+                            </div>
+                            {quiz.total_points && (
+                              <div className="flex items-center gap-1">
+                                <FiCheckCircle className="text-gray-400" />
+                                <span>{quiz.total_points} điểm</span>
+                              </div>
+                            )}
+                          </div>
+                          {quiz.description && (
+                            <p className="text-sm text-gray-600">{quiz.description}</p>
+                          )}
+                          <button
+                            onClick={() => setSelectedQuiz(selectedQuiz?.id === quiz.id ? null : quiz)}
+                            className="text-sm text-blue-600 hover:underline mt-2"
+                          >
+                            {selectedQuiz?.id === quiz.id ? 'Ẩn câu hỏi' : 'Xem câu hỏi'}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => openQuizEditModal(quiz)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Chỉnh sửa"
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuiz(quiz.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Xóa"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </div>
+                      {selectedQuiz?.id === quiz.id && quiz.questions && (
+                        <div className="mt-4 border-t pt-4 space-y-3">
+                          <h5 className="font-medium text-gray-700 mb-2">Danh sách câu hỏi:</h5>
+                          {quiz.questions.map((q, qIndex) => (
+                            <div key={qIndex} className="bg-gray-50 rounded-lg p-3">
+                              <p className="font-medium text-gray-800 mb-2">
+                                {qIndex + 1}. {q.content || q.text}
+                                <span className="text-sm text-gray-500 ml-2">({q.points || 1} điểm)</span>
+                              </p>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Loại: {q.type === 'multiple-choice' ? 'Trắc nghiệm' : q.type === 'true-false' ? 'Đúng/Sai' : 'Tự luận ngắn'}
+                              </p>
+                              {q.options && (
+                                <div className="space-y-1 ml-4">
+                                  {q.options.map((opt, oIndex) => (
+                                    <div
+                                      key={oIndex}
+                                      className={`text-sm flex items-center gap-2 ${
+                                        opt === q.correctAnswer || q.correct_answer === opt
+                                          ? 'text-green-600 font-medium'
+                                          : 'text-gray-600'
+                                      }`}
+                                    >
+                                      <span className="w-4">{String.fromCharCode(65 + oIndex)}.</span>
+                                      <span>{opt}</span>
+                                      {(opt === q.correctAnswer || q.correct_answer === opt) && (
+                                        <FiCheckCircle className="text-green-600" />
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 pt-8 border-t border-gray-100 mt-8">
+              <button
+                onClick={() => navigate(-1)}
+                className="px-5 py-2.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ProfileSidebar */}
+      <div className="sticky top-0 h-screen">
+        <ProfileSidebar 
+          weeklyActivities={weeklyActivities}
+          myCourses={myCourses}
+          friends={friends}
+          user={user}
+          isAuthenticated={isAuthenticated}
+        />
+      </div>
+
+      {/* Quiz Modal */}
       {showQuizModal && lesson && (
         <CreateQuizPage
           lesson={{ ...lesson, content_url: lesson.contentUrl }}
@@ -234,152 +520,6 @@ const LessonDetailPage = () => {
           onQuizCreated={() => closeQuizModal(true)}
         />
       )}
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"><FiArrowLeft className="text-lg" /></button>
-          {!isEditing ? (
-            <button onClick={handleEditToggle} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><FiEdit /> Chỉnh sửa</button>
-          ) : (
-            <div className="flex gap-2">
-              <button onClick={handleSaveLesson} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Lưu</button>
-              <button onClick={handleEditToggle} className="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400">Hủy</button>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <section className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-4 py-6">
-            <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
-                {isEditing ? (
-                  <input type="text" value={editData.title} onChange={(e) => handleEditChange("title", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                ) : (
-                  <h1 className="text-3xl font-bold text-gray-800">{lesson.title}</h1>
-                )}
-              </div>
-
-              {/* Course Info + Meta */}
-              <div className="space-y-3 pb-4 border-b border-gray-200">
-                {course && (
-                  <div className="text-sm text-gray-600"><p>Khóa học: <span className="font-semibold">{course.title}</span></p></div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-gray-700"><FiFileText /><span>Loại: {lesson.content_type}</span></div>
-                  <div className="flex items-center gap-2 text-gray-700"><FiCalendar /><span>Cập nhật: {new Date(lesson.updated_at).toLocaleDateString()}</span></div>
-                  <div className="flex items-center gap-2 text-gray-700"><FiClock /><span>Thời lượng: {lesson.duration || "N/A"}</span></div>
-                </div>
-              </div>
-
-              {/* Video Player */}
-              {(editData.contentUrl || lesson.contentUrl) && (
-                <div className="bg-gray-900 rounded-lg overflow-hidden">{renderVideoPlayer()}</div>
-              )}
-
-              {/* Video URL */}
-              {isEditing && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
-                  <input type="text" value={editData.contentUrl || ""} onChange={(e) => handleEditChange("contentUrl", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://youtube.com/watch?v=... hoặc Cloudinary URL" />
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                {isEditing ? (
-                  <textarea value={editData.contentBody || ""} onChange={(e) => handleEditChange("contentBody", e.target.value)} rows={5} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                ) : (
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    {lesson.contentBody ? (
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{lesson.contentBody}</p>
-                    ) : (
-                      <p className="text-gray-400 italic">Chưa có mô tả</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Quizzes Section */}
-              <div className="border-t pt-6">
-                <div className="flex items-center justify-between mb-4"><h3 className="text-xl font-semibold text-gray-800">Quiz của bài học</h3><span className="text-sm text-gray-500">{quizzes.length} quiz</span></div>
-                {quizzes.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8"><p className="mb-2">Chưa có quiz nào cho bài học này</p></div>
-                ) : (
-                  <div className="space-y-4">
-                    {quizzes.map((quiz, index) => (
-                      <div key={quiz.id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-gray-800">{quiz.title}</h4>
-                              {quiz.status === "published" && (<span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Published</span>)}
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-gray-600 mb-3">
-                              <div className="flex items-center gap-1"><FiFileText className="text-gray-400" /><span>{quiz.questions?.length || 0} câu hỏi</span></div>
-                              <div className="flex items-center gap-1"><FiClock className="text-gray-400" /><span>{quiz.duration || 15} phút</span></div>
-                              {quiz.total_points && (<div className="flex items-center gap-1"><FiCheckCircle className="text-gray-400" /><span>{quiz.total_points} điểm</span></div>)}
-                            </div>
-                            {quiz.description && (<p className="text-sm text-gray-600">{quiz.description}</p>)}
-                            <button onClick={() => setSelectedQuiz(selectedQuiz?.id === quiz.id ? null : quiz)} className="text-sm text-blue-600 hover:underline mt-2">{selectedQuiz?.id === quiz.id ? "Ẩn câu hỏi" : "Xem câu hỏi"}</button>
-                          </div>
-                          <div className="flex items-center gap-2 ml-4">
-                            <button onClick={() => openQuizEditModal(quiz)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Chỉnh sửa"><FiEdit /></button>
-                            <button onClick={() => handleDeleteQuiz(quiz.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Xóa"><FiTrash2 /></button>
-                          </div>
-                        </div>
-                        {selectedQuiz?.id === quiz.id && quiz.questions && (
-                          <div className="mt-4 border-t pt-4 space-y-3">
-                            <h5 className="font-medium text-gray-700 mb-2">Danh sách câu hỏi:</h5>
-                            {quiz.questions.map((q, qIndex) => (
-                              <div key={qIndex} className="bg-gray-50 rounded-lg p-3">
-                                <p className="font-medium text-gray-800 mb-2">
-                                  {qIndex + 1}. {q.content || q.text}
-                                  <span className="text-sm text-gray-500 ml-2">({q.points || 1} điểm)</span>
-                                </p>
-                                <p className="text-xs text-gray-500 mb-2">
-                                  Loại: {q.type === "multiple-choice" ? "Trắc nghiệm" : q.type === "true-false" ? "Đúng/Sai" : "Tự luận ngắn"}
-                                </p>
-                                {q.options && (
-                                  <div className="space-y-1 ml-4">
-                                    {q.options.map((opt, oIndex) => (
-                                      <div key={oIndex} className={`text-sm flex items-center gap-2 ${opt === q.correctAnswer || q.correct_answer === opt ? "text-green-600 font-medium" : "text-gray-600"}`}>
-                                        <span className="w-4">{String.fromCharCode(65 + oIndex)}.</span>
-                                        <span>{opt}</span>
-                                        {(opt === q.correctAnswer || q.correct_answer === opt) && (<FiCheckCircle className="text-green-600" />)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Right sticky profile sidebar */}
-      <div className="flex justify-center items-start sticky top-0">
-        <ProfileSidebar 
-          weeklyActivities={weeklyActivities}
-          myCourses={myCourses}
-          friends={friends}
-          user={user}
-          isAuthenticated={isAuthenticated}
-        />
-      </div>
     </div>
   );
 };

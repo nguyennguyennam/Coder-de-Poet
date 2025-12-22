@@ -263,6 +263,7 @@ const CreateQuizPage = ({ lesson, course, quiz, onBack, onQuizCreated, onQuizUpd
     try {
       setSavingQuiz(true);
       if (isEdit && quiz?.id) {
+        // Update quiz metadata
         await instructorService.updateQuiz(quiz.id, {
           title: quizData.title,
           description: quizData.description,
@@ -270,7 +271,19 @@ const CreateQuizPage = ({ lesson, course, quiz, onBack, onQuizCreated, onQuizUpd
           maxAttempts: quizData.maxAttempts,
           lessonId: lesson.id,
         });
-        await instructorService.clearQuizQuestions(quiz.id);
+        
+        // Delete old questions individually
+        if (quiz.questions && quiz.questions.length > 0) {
+          for (const oldQuestion of quiz.questions) {
+            try {
+              await instructorService.deleteQuestionFromQuiz(quiz.id, oldQuestion.id);
+            } catch (err) {
+              console.warn('Could not delete old question:', oldQuestion.id, err);
+            }
+          }
+        }
+        
+        // Add new questions
         await instructorService.addQuestionsToQuiz(quiz.id, quizData.questions);
         alert("Quiz đã được cập nhật thành công!");
         onQuizUpdated?.({ id: quiz.id });
