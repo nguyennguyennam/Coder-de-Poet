@@ -127,7 +127,6 @@ const instructorService = {
   },
   addQuizToLesson: async (lessonId, quizData) => {
     const token = authService.getStoredToken();
-    console.log("quizz data: ", quizData)
     const response = await apiCourse.post(`/quizzes`, quizData,{               
         headers: { Authorization: `Bearer ${token}` }
         });
@@ -146,7 +145,7 @@ const instructorService = {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
-      console.log("AI Quiz generated:", response.data);
+      // Chỉ return response data, user sẽ lưu bằng addQuizToLesson
       return response.data;
     } catch (error) {
       console.error('Error generating AI quiz:', error);

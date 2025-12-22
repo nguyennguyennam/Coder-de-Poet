@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import courseService from '../../services/courseService';
 
-const QuizPanel = ({ courseId, videoUrl, onClose }) => {
+const QuizPanel = ({ lessonId, videoUrl, onClose }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
@@ -13,22 +14,22 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
 
  useEffect(() => {
   const fetchQuiz = async () => {
-    if (!courseId) return;
+    console.log("fetchQuiz called, lessonId:", lessonId);
+    if (!lessonId) {
+      console.log("lessonId is empty, returning");
+      setError("lessonId không hợp lệ");
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch(
-        `http://localhost:3001/quizzes/lesson/${courseId}`
-      );
-
-      if (!res.ok) throw new Error("Không lấy được quiz");
-
-      console.log(res)
-
-      const quizzes = await res.json();
-      console.log(quizzes);
+      console.log("KKK");
+      const quizzes = await courseService.getQuizzesByLesson(lessonId);
+      console.log("quizzes response:", quizzes);
+      
       if (!quizzes.length) throw new Error("Bài học chưa có quiz");
 
       // Lấy quiz đầu tiên (hoặc bạn có thể cho chọn)
@@ -45,7 +46,7 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
       }));
 
       setQuizData({
-        courseId,
+        lessonId,
         title: quiz.title,
         totalQuestions: questions.length,
         timeLimit: quiz.duration * 60,
@@ -62,7 +63,7 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
   };
 
   fetchQuiz();
-}, [courseId]);
+}, [lessonId]);
 
   // Parse text từ GPT thành mảng câu hỏi chuẩn
   const parseQuizFromText = (text) => {
@@ -199,7 +200,7 @@ const QuizPanel = ({ courseId, videoUrl, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[96vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#456882] to-[#1B3C53] text-white p-6">
           <div className="flex justify-between items-center mb-4">
