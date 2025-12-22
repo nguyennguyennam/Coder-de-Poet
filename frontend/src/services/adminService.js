@@ -93,10 +93,11 @@ class AdminService {
     }
   }
 
+  // Approve == publish course
   async approveCourse(courseId) {
     try {
       const token = authService.getStoredToken();
-      const { data } = await apiCourse.post(`/admin/courses/${courseId}/approve`, {}, {
+      const { data } = await apiCourse.post(`/courses/${courseId}/publish`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return { success: true, data };
@@ -109,10 +110,11 @@ class AdminService {
     }
   }
 
+  // Reject == move to draft
   async rejectCourse(courseId) {
     try {
       const token = authService.getStoredToken();
-      const { data } = await apiCourse.post(`/admin/courses/${courseId}/reject`, {}, {
+      const { data } = await apiCourse.patch(`/courses/${courseId}/draft`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return { success: true, data };

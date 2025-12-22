@@ -72,8 +72,8 @@ function AdminCourses() {
     if (statusParam === 'all') return courses;
     return courses.filter((c) => {
       const status = (c.status || c.approval_status || '').toLowerCase();
-      if (statusParam === 'pending') return status === 'pending' || status === 'draft';
-      if (statusParam === 'approved') return status === 'approved' || status === 'published';
+      if (statusParam === 'draft') return status === 'draft' || status === 'pending';
+      if (statusParam === 'published') return status === 'published';
       if (statusParam === 'rejected') return status === 'rejected';
       return true;
     });
@@ -194,7 +194,7 @@ function AdminCourses() {
 
       {/* Status Filters */}
       <div className="mb-4 flex gap-2 text-sm">
-        {['all','pending','approved','rejected'].map((s) => (
+        {['all','draft','published','rejected'].map((s) => (
           <button
             key={s}
             onClick={() => setSearchParams({ instructorId, status: s })}
