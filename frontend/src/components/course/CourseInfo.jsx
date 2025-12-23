@@ -94,6 +94,7 @@ const CourseInfo = ({ courseData, user, isEnrolled = false, onEnroll, enrolling 
       {showQuiz && (
         <QuizPanel 
           lessonId={currentLesson.id} 
+          courseId={courseData.id}
           videoUrl={currentLesson.content_url}
           onClose={() => setShowQuiz(false)} 
         />

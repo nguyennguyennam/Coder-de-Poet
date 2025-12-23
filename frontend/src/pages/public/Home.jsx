@@ -86,46 +86,53 @@ const Home = () => {
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get(`${API_URL}/categories`);
+useEffect(() => {
+  let intervalId;
 
-        if (response.data && response.data.categories) {
-          const allCategory = {
-            id: 'all',
-            name: 'All',
-            slug: 'all',
-            image: defaultCategoryImage
-          };
-          
-          const apiCategories = response.data.categories.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            slug: cat.slug,
-            image: categoryImages[cat.slug] || defaultCategoryImage,
-            description: cat.description
-          }));
-          
-          setCategories([allCategory, ...apiCategories]);
-        }
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-        setError('Failed to load categories. Please try again later.');
-        setCategories([{
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_URL}/categories`);
+
+      if (response.data?.categories) {
+        const allCategory = {
           id: 'all',
           name: 'All',
           slug: 'all',
           image: defaultCategoryImage
-        }]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        };
 
-    fetchCategories();
-  }, [API_URL]);
+        const apiCategories = response.data.categories.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          image: categoryImages[cat.slug] || defaultCategoryImage,
+          description: cat.description
+        }));
+
+        setCategories([allCategory, ...apiCategories]);
+
+        // ✅ FETCH THÀNH CÔNG → DỪNG RETRY
+        clearInterval(intervalId);
+      }
+    } catch (err) {
+        setError('Failed to load categories. Please try again later.');
+        clearInterval(intervalId);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // gọi ngay lần đầu
+  fetchCategories();
+
+  // retry mỗi 3s nếu fail
+  intervalId = setInterval(fetchCategories, 3000);
+
+  return () => clearInterval(intervalId);
+}, [API_URL]);
+
+
 
   useEffect(() => {
     const fetchPopularCourses = async () => {

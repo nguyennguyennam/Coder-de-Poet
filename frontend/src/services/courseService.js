@@ -73,6 +73,26 @@ const courseService = {
     }
   },
 
+  // Grade quiz submission
+  gradeQuizSubmission: async (studentId, lessonId, courseId, answers) => {
+    try {
+      const token = authService.getStoredToken();
+      const quizSubmissionDto = {
+        studentId,
+        lessonId,
+        courseId,
+        answers
+      };
+      const response = await apiCourse.post('/quizzes/grade', quizSubmissionDto, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error grading quiz:', error);
+      throw error;
+    }
+  },
+
   // Get lessons by course
   getLessonsByCourse: async (courseId) => {
     try {

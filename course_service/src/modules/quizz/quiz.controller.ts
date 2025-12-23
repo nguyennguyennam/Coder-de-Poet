@@ -67,16 +67,6 @@ export class QuizController {
     return this.quizService.findByCourseId(courseId);
   }
 
-  @Get('count/:courseId')
-  async countByCourse(@Param('courseId') courseId: string) {
-    return this.quizService.count({ course_id: courseId });
-  }
-
-  @Get('exists/:id')
-  async exists(@Param('id') id: string) {
-    const exists = await this.quizService.exists(id);
-    return { exists };
-  }
 
   @Get('lesson/:lessonId')
   async findByLessonWithQuestions(@Param('lessonId') lessonId: string) {
@@ -84,12 +74,12 @@ export class QuizController {
   }
   
   @Get('count/:courseId')
-  async countByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+  async countByCourse(@Param('courseId', ParseIntPipe) courseId: string) {
     return this.quizService.count({ course_id: courseId });
   }
 
   @Get('exists/:id')
-  async exists(@Param('id', ParseIntPipe) id: number) {
+  async exists(@Param('id', ParseIntPipe) id: string) {
     const exists = await this.quizService.exists(id);
     return { exists };
   }

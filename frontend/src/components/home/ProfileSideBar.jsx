@@ -92,6 +92,8 @@ const ProfileSidebar = ({
         <h2 className="text-xl font-bold text-gray-900 mb-2">
           {user?.fullName || 'User'}
         </h2>
+
+        <h4 className={`text-l text-gray-800 ${isOpen ? 'hidden' : ''}`}>{user?.email}</h4>
         
       {/* Button Logout */}
         <button
