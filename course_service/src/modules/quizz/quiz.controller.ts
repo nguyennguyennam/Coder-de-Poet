@@ -16,15 +16,12 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
-import { CreateQuizDto } from './dto/create-quiz.dto';
+import { CreateQuizDto, QuizSubmissionDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { AddQuestionsDto } from './dto/add-questions.dto';
 import { AuthGuard } from '../auth/jwt-auth.guard';
 import { 
     BadRequestException,
-    ForbiddenException,
-    Injectable,
-    NotFoundException
 } from '@nestjs/common';
 
 @Controller('quizzes')
@@ -65,89 +62,56 @@ export class QuizController {
     return this.quizService.searchQuizzes(filters, page, limit);
   }
 
-  // Routes cụ thể phải được đặt TRƯỚC routes tổng quát để tránh conflict
-  @Get('course/:courseId')
-  async findByCourse(@Param('courseId') courseId: string) {
-    return this.quizService.findByCourseId(courseId);
-  }
-
   @Get('lesson/:lessonId')
   async findByLesson(@Param('lessonId') lessonId: string) {
     return this.quizService.findByLessonId(lessonId);
   }
 
+    @Get('course/:courseId')
+  async findByCourse(@Param('courseId') courseId: string) {
+    return this.quizService.findByCourseId(courseId);
+  }
+
+
+  @Get('lesson/:lessonId')
+  async findByLessonWithQuestions(@Param('lessonId') lessonId: string) {
+    return this.quizService.findByLessonWithQuestions(lessonId);
+  }
+  
   @Get('count/:courseId')
-  async countByCourse(@Param('courseId') courseId: string) {
+  async countByCourse(@Param('courseId', ParseIntPipe) courseId: string) {
     return this.quizService.count({ course_id: courseId });
   }
 
   @Get('exists/:id')
-  async exists(@Param('id') id: string) {
+  async exists(@Param('id', ParseIntPipe) id: string) {
     const exists = await this.quizService.exists(id);
     return { exists };
   }
 
-  // Routes tổng quát đặt ở cuối
+
+  //Endpoint for grading quiz submission
+  /*
+    Slug: :id: Quiz Id
+    Body: QuestionWithAnswerDto[]
+    Output: { totalScore: number, totalQuestions: number, foundQuestions: number }
+  */
+  @Post('/grade') 
+  async gradeQuizSubmission(@Body() quizSubmissionDto: QuizSubmissionDto) {
+    return this.quizService.calculateQuizScore(quizSubmissionDto);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.quizService.findOne(id);
   }
 
   @Get(':id/stats')
-  async getQuizStats(@Param('id', ParseIntPipe) id: string) {
+  async getQuizStats(@Param('id') id: string) {
     return this.quizService.getQuizStats(id);
   }
 
-  @Get(':id/submissions')
-  async getQuizSubmissions(@Param('id') id: string) {
-    return this.quizService.getQuizSubmissions(id);
-  }
-
-  @Patch(':id/publish')
-  @UseGuards(AuthGuard)
-  async publishQuiz(@Param('id') id: string) {
-    return this.quizService.publishQuiz(id);
-  }
-
-  @Patch(':id/unpublish')
-  @UseGuards(AuthGuard)
-  async unpublishQuiz(@Param('id') id: string) {
-    return this.quizService.unpublishQuiz(id);
-  }
-
-  @Delete(':id/questions')
-  @UseGuards(AuthGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async clearQuizQuestions(@Param('id') id: string) {
-    await this.quizService.remove(id);
-  }
-
-  @Delete(':quizId/questions/:questionId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeQuestionFromQuiz(
-    @Param('quizId') quizId: string,
-    @Param('questionId') questionId: string,
-  ) {
-    await this.quizService.removeQuestionFromQuiz(quizId, questionId);
-  }
-
-  @Post(':id/questions')
-  @UseGuards(AuthGuard)
-  async addQuestions(
-    @Param('id') quizId: string,
-    @Body() addQuestionsDto: AddQuestionsDto,
-  ) {
-    return this.quizService.addQuestionsToQuiz(quizId, addQuestionsDto.questions);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string) {
-    await this.quizService.remove(id);
-  }
-
   @Put(':id')
-  @UseGuards(AuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateQuizDto: UpdateQuizDto,
@@ -160,4 +124,50 @@ export class QuizController {
     
     return this.quizService.update(id, updateQuizDto);
   }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string) {
+    await this.quizService.remove(id);
+  }
+
+  @Post(':id/questions')
+  async addQuestions(
+    @Param('id') quizId: string,
+    @Body() addQuestionsDto: AddQuestionsDto,
+  ) {
+    return this.quizService.addQuestionsToQuiz(quizId, addQuestionsDto.questions);
+  }
+
+  @Delete(':quizId/questions/:questionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeQuestionFromQuiz(
+    @Param('quizId') quizId: string,
+    @Param('questionId') questionId: string,
+  ) {
+    await this.quizService.removeQuestionFromQuiz(quizId, questionId);
+  }
+
+  @Delete(':id/questions')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async clearQuizQuestions(@Param('id') id: string) {
+    await this.quizService.remove(id);
+  }
+
+  @Patch(':id/publish')
+  async publishQuiz(@Param('id') id: string) {
+    return this.quizService.publishQuiz(id);
+  }
+
+  @Patch(':id/unpublish')
+  async unpublishQuiz(@Param('id') id: string) {
+    return this.quizService.unpublishQuiz(id);
+  }
+
+  @Get(':id/submissions')
+  async getQuizSubmissions(@Param('id') id: string) {
+    return this.quizService.getQuizSubmissions(id);
+  }
+
+
 }

@@ -224,65 +224,35 @@ export default function Navigation_Mobile() {
         */}
 
         <ul className="flex flex-col space-y-2 pt-24 px-4">
-
           <li>
-
-            <NavLink to={user?.role === "Admin" ? '/admin' : user?.role === "Instructor" ? '/instructor/dashboard' : '/'} className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-
-              {isAdmin ? 'Dashboard' : 'Dashboard'}
-
+            <NavLink to={`${user === null ? '/' : user.role === "Admin" ? '/admin': user.role === "Instructor" ? '/instructor/dashboard':'/'}`} className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
+              {`${isAdmin ? 'Total': 'Dashboard'}`}
             </NavLink>
-
           </li>
 
           <li>
-
-            <NavLink to={isAdmin ? '/admin/courses' : '/courses'} className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-
-              {isAdmin ? 'Manage Courses' : 'Courses'}
-
+            <NavLink to={`${isAdmin ? '/admin/courses': '/courses'}`} className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
+              {`${isAdmin ? 'Manage Courses': 'Courses'}`}
             </NavLink>
-
           </li>
 
-          {isAdmin && (
-            <li>
-              <NavLink to="/admin/users" className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-                Manage Users
-              </NavLink>
-            </li>
-          )}
-
           <li>
-
             <NavLink to="/book" className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-
-              Library
-
+              {`${isAdmin ? 'Manage Library': 'Library'}`}
             </NavLink>
-
           </li>
 
           <li>
-
-            <NavLink to="/calendar" className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-
+            <NavLink to={`${user === null ? '/' : user.role === "Admin" ? '/admin/member': user.role === "Instructor" ? '/instructor/member':'/calendar'}`} className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
               Calendar
-
             </NavLink>
-
           </li>
 
           <li>
-
             <NavLink to="/setting" className={getMobileNavLinkClasses} onClick={handleMobileLinkClick}>
-
               Settings
-
             </NavLink>
-
           </li>
-
         </ul>
 
       </div>
