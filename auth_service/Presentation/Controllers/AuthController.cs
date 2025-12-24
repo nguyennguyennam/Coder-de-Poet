@@ -335,12 +335,12 @@ namespace auth_service.Presentation.Controllers
         {
             if (request == null)
             {
-                return BadRequest("Request body is required.");
+                return BadRequest(new { success = false, errorMessage = "Request body is required." });
             }
 
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { success = false, errorMessage = "Invalid request." });
             }
 
             var result = await _userUseCase.UpdateUserRoleAsync(id, request.Role);
@@ -348,16 +348,23 @@ namespace auth_service.Presentation.Controllers
             if (!result.IsSuccess)
             {
                 var firstError = result.Errors.FirstOrDefault();
+                var errorMessage = firstError?.Message ?? "Update failed";
+                
                 return firstError?.Code switch
                 {
-                    "NotFound" => NotFound(result),
-                    "InvalidUserId" => BadRequest(result),
-                    "InvalidRole" => BadRequest(result),
-                    _ => BadRequest(result)
+                    "NotFound" => NotFound(new { success = false, errorMessage }),
+                    "InvalidUserId" => BadRequest(new { success = false, errorMessage }),
+                    "InvalidRole" => BadRequest(new { success = false, errorMessage }),
+                    "ForbiddenRole" => BadRequest(new { success = false, errorMessage }),
+                    _ => BadRequest(new { success = false, errorMessage })
                 };
             }
 
-            return Ok(result);
+            return Ok(new
+            {
+                success = true,
+                data = result.Data
+            });
         }
 
         
