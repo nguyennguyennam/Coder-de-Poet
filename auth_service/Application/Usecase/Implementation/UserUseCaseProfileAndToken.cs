@@ -157,6 +157,7 @@ namespace auth_service.Application.Usecase.Implementation
             FullName = user.FullName ?? string.Empty,
             DateOfBirth = user.DateOfBirth,
             AvatarUrl = user.AvatarUrl,
+            CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt,
             Role = user.GetFormattedRole()
         };
