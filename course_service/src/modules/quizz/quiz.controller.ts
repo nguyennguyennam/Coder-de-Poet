@@ -62,6 +62,11 @@ export class QuizController {
     return this.quizService.searchQuizzes(filters, page, limit);
   }
 
+  @Get('lesson/:lessonId')
+  async findByLesson(@Param('lessonId') lessonId: string) {
+    return this.quizService.findByLessonId(lessonId);
+  }
+
     @Get('course/:courseId')
   async findByCourse(@Param('courseId') courseId: string) {
     return this.quizService.findByCourseId(courseId);

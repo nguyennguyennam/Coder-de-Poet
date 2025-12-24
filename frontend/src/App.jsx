@@ -18,6 +18,8 @@ import GoogleCallbackHandler from './components/auth/GoogleCallbackHandler';
 import CourseDetail from './pages/course/CourseDetail';
 import CourseList from './pages/course/CourseList';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import LessonDetailPageRoute from './pages/instructor/LessonDetail';
+import CourseDetailRoute from './pages/instructor/CourseDetail';
 import CourseDetailModal from './pages/instructor/CourseDetailModal';
 import ChatbotPage from './pages/chat/ChatbotPage';
  
@@ -86,6 +88,24 @@ function Layout() {
             element={ 
               <InstructorRoute>
                 <InstructorDashboard />
+              </InstructorRoute>
+            } 
+          />
+
+          <Route 
+            path="/instructor/courses/:courseId/lesson/:lessonId" 
+            element={ 
+              <InstructorRoute>
+                <LessonDetailPageRoute />
+              </InstructorRoute>
+            } 
+          />
+
+          <Route 
+            path="/instructor/courses/:courseId" 
+            element={ 
+              <InstructorRoute>
+                <CourseDetailRoute />
               </InstructorRoute>
             } 
           />
