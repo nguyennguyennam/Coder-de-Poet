@@ -3,6 +3,7 @@ using IdeService.Dtos;
 using IdeService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace IdeService.Controllers;
 
@@ -10,6 +11,9 @@ namespace IdeService.Controllers;
 [Route("api/run")]
 public class RunController(IdeDbContext db, JudgeService judge) : ControllerBase
 {
+    private record BatchCase(Guid testcaseId, int ord, string input);
+    private record BatchPayload(List<BatchCase> cases);
+
     [HttpPost]
     public async Task<ActionResult<RunResponseDto>> Run([FromBody] RunRequestDto req)
     {
@@ -34,33 +38,71 @@ public class RunController(IdeDbContext db, JudgeService judge) : ControllerBase
 
         if (tests.Count == 0) return BadRequest(new { error = "no public testcases" });
 
+        // build cases.json
+        var batch = new BatchPayload(
+            tests.Select(tc => new BatchCase(tc.Id, tc.Ord, tc.InputData)).ToList()
+        );
+        var casesJson = JsonSerializer.Serialize(batch);
+
+        // ONE docker run
+        var (exitCode, stdout, stderr, timeMs, memKb) =
+            await judge.RunBatchAsync(req.Language, req.SourceCode, casesJson);
+
+        // runner should output JSON: {"results":[...]}
+        // If runner crashed -> treat as RE
+        if (exitCode != 0 && string.IsNullOrWhiteSpace(stdout))
+        {
+            var fallback = new List<RunCaseResultDto>();
+            foreach (var tc in tests)
+            {
+                fallback.Add(new RunCaseResultDto(
+                    tc.Id, tc.Ord, "RE", false,
+                    "", tc.ExpectedOutput, stderr,
+                    timeMs, memKb
+                ));
+            }
+            return Ok(new RunResponseDto("RE", fallback));
+        }
+
+        using var doc = JsonDocument.Parse(stdout);
+        var arr = doc.RootElement.GetProperty("results").EnumerateArray();
+
         var overall = "AC";
         var results = new List<RunCaseResultDto>();
 
-        foreach (var tc in tests)
+        foreach (var item in arr)
         {
-            var (status, stdout, stderr, timeMs, memKb) =
-                await judge.RunOneAsync(req.Language, req.SourceCode, tc.InputData);
+            var testcaseId = item.GetProperty("testcaseId").GetGuid();
+            var ord = item.GetProperty("ord").GetInt32();
+            var exit = item.GetProperty("exitCode").GetInt32();
+            var outText = item.TryGetProperty("stdout", out var o) ? (o.GetString() ?? "") : "";
+            var errText = item.TryGetProperty("stderr", out var e) ? (e.GetString() ?? "") : "";
+            var caseTimeMs = item.TryGetProperty("timeMs", out var t) ? t.GetInt32() : 0;
 
-            var caseStatus = status;
+            var tc = tests.First(x => x.Id == testcaseId);
+
+            var caseStatus = JudgeService.MapExitCode(exit);
             var passed = false;
 
-            if (status == "OK")
+            if (caseStatus == "OK")
             {
-                passed = JudgeService.CheckOutput(tc.ExpectedOutput, stdout);
+                passed = JudgeService.CheckOutput(tc.ExpectedOutput, outText);
                 if (!passed) caseStatus = "WA";
             }
 
             overall = JudgeService.UpdateOverall(overall, caseStatus);
 
             results.Add(new RunCaseResultDto(
-                tc.Id, tc.Ord, caseStatus, passed,
-                stdout, tc.ExpectedOutput, stderr,
-                timeMs, memKb
+                tc.Id, ord, caseStatus, passed,
+                outText, tc.ExpectedOutput, errText,
+                caseTimeMs, 0
             ));
 
             if (caseStatus == "CE") break;
         }
+
+        // if batch runner itself failed, bump overall
+        if (exitCode != 0 && overall == "AC") overall = "RE";
 
         return Ok(new RunResponseDto(overall, results));
     }

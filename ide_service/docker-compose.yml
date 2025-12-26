@@ -14,7 +14,9 @@ services:
       RUNNER_IMAGE: "learnix-runner:latest"
       SANDBOX_TIMEOUT_MS: "2500"
       SANDBOX_CPU: "1.0"
-      SANDBOX_MEM: "256m"
+      SANDBOX_CPU_COMPILED: "2.0"
+      SANDBOX_MEM_PY: "256m"
+      SANDBOX_MEM_COMPILED: "512m"
       SANDBOX_PIDS: "128"
       MAX_OUTPUT_BYTES: "1048576"
 

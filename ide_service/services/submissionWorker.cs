@@ -13,7 +13,7 @@ namespace IdeService.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 try { await ProcessOne(stoppingToken); }
-                catch { /* add logging if needed */ }
+                catch {  }
 
                 await Task.Delay(IntervalMs, stoppingToken);
             }
