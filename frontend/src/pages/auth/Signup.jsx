@@ -17,7 +17,7 @@ const SignUp = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/login';
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -55,7 +55,7 @@ const SignUp = () => {
 
       console.log('Sending signup data:', signupData);
       const result = await authService.signup(signupData);
-      navigate(from, { replace: true });
+      navigate('/login', { replace: true });
     } catch (err) {
       console.error('Signup error:', err);
       const msg = err.response?.data?.message || err.message || 'Sign up failed. Please try again.';
