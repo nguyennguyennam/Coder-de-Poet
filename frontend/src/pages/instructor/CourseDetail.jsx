@@ -14,6 +14,7 @@ import instructorService from "../../services/instructorService";
 import CreateQuizPage from "./CreateQuizPage";
 import { useAuth } from "../../contexts/AuthContext";
 import ProfileSidebar from '../../components/home/ProfileSideBar';
+import InstructorAddLesson from "./InstructorAddLesson";
 
 const CourseDetailRoute = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const CourseDetailRoute = () => {
   const [loading, setLoading] = useState(true);
   const [courseLoading, setCourseLoading] = useState(true);
   const [myCourses, setMyCourses] = useState([]);
+  const [showAddLesson, setShowAddLesson] = useState(false);
 
   const weeklyActivities = [
     { day: 'Mon', hours: 2.5, type: 'learning' },
@@ -172,7 +174,7 @@ const CourseDetailRoute = () => {
                     <p className="text-sm text-gray-500 truncate">{course.category} • {course.status}</p>
                   </div>
                   </div>
-                  <button className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition whitespace-nowrap">
+                  <button className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition whitespace-nowrap" onClick={() => setShowAddLesson(true)}>
                   Add Lesson
                   </button>
                 </div>
@@ -252,6 +254,14 @@ const CourseDetailRoute = () => {
                   course={course}
                   onBack={() => { setShowQuizModal(false); setSelectedLesson(null); }}
                   onQuizCreated={handleQuizCreated}
+                />
+              )}
+
+              {showAddLesson && (
+                <InstructorAddLesson
+                  onClose={() => setShowAddLesson(false)}
+                  preSelectedCourse={course}
+                  MyCourse={[course]}
                 />
               )}
 

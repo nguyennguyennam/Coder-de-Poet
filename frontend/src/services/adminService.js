@@ -110,6 +110,7 @@ class AdminService {
     }
   }
 
+
   // Reject == move to draft
   async rejectCourse(courseId) {
     try {

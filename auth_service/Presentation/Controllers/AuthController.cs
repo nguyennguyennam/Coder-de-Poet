@@ -367,6 +367,75 @@ namespace auth_service.Presentation.Controllers
             });
         }
 
+        //admin get one instructor by id
+        [HttpGet("admin/instructors/{id:guid}")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetInstructorById([FromRoute] Guid id)
+        {
+            var result = await _userUseCase.GetInstructorByIdAsync(id);
+
+            if (!result.IsSuccess)
+            {
+                var firstError = result.Errors.FirstOrDefault();
+                return firstError?.Code switch
+                {
+                    "NotFound" => NotFound(result),
+                    _ => BadRequest(result)
+                };
+            }
+
+            return Ok(result);
+        }
+
+        // POST /api/auth/forgot-password
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { success = false, message = "Email is required." });
+            }
+
+            var result = await _userUseCase.ForgotPasswordAsync(request.Email);
+
+            return Ok(new
+            {
+                success = result.IsSuccess,
+                message = result.Message
+            });
+        }
+
+        // POST /api/auth/reset-password
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { success = false, message = "Token and password are required." });
+            }
+
+            var result = await _userUseCase.ResetPasswordAsync(request.Token, request.Password);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { success = false, message = result.Message });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = result.Message
+            });
+        }
+
         
     }
 }

@@ -101,12 +101,17 @@ namespace auth_service.Application.Usecase.Implementation
             var accessToken = _jwtTokenProvider.GenerateJWTAccessToken(user);
             var refreshToken = _jwtTokenProvider.GenerateRefreshToken();
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(7); // adjust as needed
+            // 4. Update user's refresh token in DB
+            user.UpdateRefreshToken(refreshToken, refreshTokenExpiry);
 
-                        // 5. Return result
+            await _userRepository.UpdateUserAsync(user);
+
+            // 5. Return result
             return new AuthResult
             {
                 IsSuccess = true,
                 AccessToken = accessToken,
+                RefreshToken = refreshToken,
                 User = new UserPublicInfo
                     {
                         Id = user.Id,

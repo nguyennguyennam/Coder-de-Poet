@@ -36,6 +36,10 @@ namespace auth_service.Domain.Entity
         public string RefreshToken { get; private set; } = string.Empty;
         public DateTime RefreshTokenExpiry { get; private set; } = DateTime.UtcNow;
 
+        // Password Reset fields
+        public string? PasswordResetToken { get; private set; }
+        public DateTime? PasswordResetTokenExpiry { get; private set; }
+
 
         //ORM Constructor
         protected User() {}
@@ -118,6 +122,27 @@ namespace auth_service.Domain.Entity
             RefreshTokenExpiry = DateTime.UtcNow.AddDays(0);
         }
 
+        // Password Reset methods
+        public void SetPasswordResetToken(string token)
+        {
+            PasswordResetToken = token;
+            PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // Token valid for 1 hour
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public bool IsPasswordResetTokenValid()
+        {
+            return !string.IsNullOrEmpty(PasswordResetToken) && 
+                   PasswordResetTokenExpiry.HasValue && 
+                   PasswordResetTokenExpiry > DateTime.UtcNow;
+        }
+
+        public void ClearPasswordResetToken()
+        {
+            PasswordResetToken = null;
+            PasswordResetTokenExpiry = null;
+            UpdatedAt = DateTime.UtcNow;
+        }
 
         public string GetEmail() => Email;
         public string GetHashedPassword() => HashedPassword;
@@ -128,6 +153,7 @@ namespace auth_service.Domain.Entity
         public DateTime GetCreatedAt() => CreatedAt;
         public DateTime GetUpdatedAt() => UpdatedAt;
         public DateTime GetRefreshTokenExpiry() => RefreshTokenExpiry;
+        public string? GetPasswordResetToken() => PasswordResetToken;
         
      }
 }

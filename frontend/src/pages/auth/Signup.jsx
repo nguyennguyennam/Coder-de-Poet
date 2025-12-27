@@ -187,6 +187,13 @@ const SignUp = () => {
             >
               Sign In
             </button>
+            <br />
+            <button
+              onClick={() => navigate('/forgot-password')}
+              className="underline hover:text-gray-700 font-medium text-xs mt-2"
+            >
+              Forgot Password?
+            </button>
           </p>
         </div>
       </div>

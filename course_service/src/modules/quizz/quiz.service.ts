@@ -153,6 +153,15 @@ export class QuizService {
     }
   }
 
+  async reviewQuizByLessonId(lessonId: string): Promise<any[]> {
+    try {
+      return await this.quizRepository.reviewQuizByLessonId(lessonId);  
+    } catch (error) {
+      console.error('Error reviewing quizzes by lesson:', error);
+      throw new BadRequestException('Failed to review quizzes by lesson');
+    }
+  }
+
   /**
    * Tìm kiếm quiz với phân trang và bộ lọc
    */

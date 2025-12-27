@@ -24,6 +24,8 @@ const InstructorAddLesson = ({ onClose, MyCourse, preSelectedCourse }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState("");
+  const [showAddLesson, setShowAddLesson] = useState(false);
+  
 
   useEffect(() => {
     const fetchCourses = async () => {

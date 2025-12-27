@@ -123,5 +123,51 @@ namespace auth_service.Application.Usecase.Implementation
                     "UpdateRoleFailed", "An error occurred while updating the user role.");
             }
         }
+
+
+    public async Task<OperationResult<UserInfoResponse>> GetInstructorByIdAsync(Guid userId)
+    {
+        if (userId == Guid.Empty)
+        {
+            return OperationResult<UserInfoResponse>.Failure(
+                "InvalidUserId", "User ID cannot be empty.");
+        }
+
+        try
+        {
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return OperationResult<UserInfoResponse>.Failure(
+                    "NotFound", $"User with ID {userId} not found");
+            }
+
+            if (user.UserRole != UserRole.Instructor)
+            {
+                return OperationResult<UserInfoResponse>.Failure(
+                    "NotInstructor", $"User with ID {userId} is not an instructor");
+            }
+
+            var response = new UserInfoResponse
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName ?? string.Empty,
+                DateOfBirth = user.DateOfBirth,
+                AvatarUrl = user.AvatarUrl,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                Role = user.GetFormattedRole()
+            };
+
+            return OperationResult<UserInfoResponse>.Success(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving instructor {UserId}", userId);
+            return OperationResult<UserInfoResponse>.Failure(
+                "GetInstructorFailed", "An error occurred while retrieving the instructor.");
+        }
+    }
     }
 }

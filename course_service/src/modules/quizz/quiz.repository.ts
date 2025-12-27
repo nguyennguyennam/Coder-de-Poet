@@ -16,11 +16,19 @@ interface QuizFilters {
   title?: string;
 }
 
+
+
 @Injectable()
 export class QuizRepository {
   constructor(
     @Inject('PG_POOL') private readonly pool: Pool,
   ) { }
+
+  private stripCorrectAnswer(question: any) {
+  const { correct_answer, ...safeQuestion } = question;
+  return safeQuestion;
+}
+
 
   // Tạo quiz mới với questions
   async createQuizWithQuestions(createQuizDto: CreateQuizDto): Promise<any> {
@@ -252,10 +260,10 @@ export class QuizRepository {
         }
       }
 
-      return {
+      return this.stripCorrectAnswer({
         ...q,
-        options: options,
-      };
+        options,
+      });
     });
 
     return quiz;
@@ -317,9 +325,59 @@ export class QuizRepository {
               options = null;
             }
           }
-          return { ...q, options };
-        });
+      return this.stripCorrectAnswer({
+        ...q,
+        options,
+      });        
+    });
         
+        return quiz;
+      })
+    );
+    
+    return quizzesWithQuestions;
+  }
+
+  async reviewQuizByLessonId(lessonId: string): Promise<any[]> {
+   const query = `
+      SELECT 
+        q.*,
+        COUNT(qu.id) as question_count
+      FROM quizzes q
+      LEFT JOIN questions qu ON q.id = qu.quiz_id
+      WHERE q.lesson_id = $1
+      GROUP BY q.id
+      ORDER BY q.created_at DESC
+    `;
+    
+    const result = await this.pool.query(query, [lessonId]);
+    
+    // Lấy questions cho mỗi quiz
+    const quizzesWithQuestions = await Promise.all(
+      result.rows.map(async (quiz) => {
+        const questionsQuery = `
+          SELECT * FROM questions 
+          WHERE quiz_id = $1 
+          ORDER BY order_index ASC
+        `;
+        const questionsResult = await this.pool.query(questionsQuery, [quiz.id]);
+        
+        quiz.questions = questionsResult.rows.map((q: any) => {
+          let options = null;
+          if (q.options) {
+            try {
+              if (typeof q.options === 'string') {
+                options = JSON.parse(q.options);
+              } else {
+                options = q.options;
+              }
+            } catch (error) {
+              console.error('Error parsing options JSON:', error);
+              options = null;
+            }
+          }
+      return {...q, options};  
+    });  
         return quiz;
       })
     );
