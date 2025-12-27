@@ -34,24 +34,24 @@ const InstructorDashboard = () => {
   const [editingCourse, setEditingCourse] = useState(null);
   const [preSelectedCourse, setPreSelectedCourse] = useState(null);
 
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const data = await instructorService.getCoursesByInstructor(instructorId.id);
+      console.log("Fetched courses:", data);
+      const courseList = data?.courses?.items || []; 
+      setCourses(courseList);
+    } catch (err) {
+      console.error(err);
+      setError("Unable to fetch courses. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     console.log("Fetching courses for instructor:", instructorId.id);
     if (!instructorId.id) return;
-    
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-        const data = await instructorService.getCoursesByInstructor(instructorId.id);
-        console.log("Fetched courses:", data);
-        const courseList = data?.courses?.items || []; 
-        setCourses(courseList);
-      } catch (err) {
-        console.error(err);
-        setError("Unable to fetch courses. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchCourses();
   }, [instructorId.id]);
 
@@ -207,7 +207,12 @@ const InstructorDashboard = () => {
 
           {showAddCourse && (
             <InstructorAddCourse
-              onClose={() => setShowAddCourse(false)} categories={categories}
+              onClose={() => setShowAddCourse(false)}
+              onSuccess={() => {
+                setShowAddCourse(false);
+                fetchCourses();
+              }}
+              categories={categories}
             />
           )}
           {/* STATS */}
