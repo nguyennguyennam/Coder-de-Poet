@@ -21,6 +21,8 @@ import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import LessonDetailPageRoute from './pages/instructor/LessonDetail';
 import CourseDetailRoute from './pages/instructor/CourseDetail';
 import ChatbotPage from './pages/chat/ChatbotPage';
+import ProblemDetailPage from './pages/ide/problems';
+import ProblemList from './pages/ide/ide';
  
 // Component để xử lý redirect dựa trên role
 function RoleBasedRedirect() {
@@ -82,6 +84,8 @@ function Layout() {
           <Route path="/courses" element={<CourseList />}/>
           <Route path="/chat" element={<ChatbotPage />}/>
 
+          <Route path="/ide" element={<ProblemList />}/>
+          <Route path="/ide/problems/:problemId" element={<ProblemDetailPage />}/>
           <Route 
             path="/instructor/dashboard" 
             element={ 
