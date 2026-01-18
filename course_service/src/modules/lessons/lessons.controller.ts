@@ -1,5 +1,27 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
+
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -10,7 +32,10 @@ import { QuizStore } from './store/quiz.store';
 @ApiTags('Lessons')
 @Controller('lessons')
 export class LessonsController {
-  constructor(private readonly quizStore: QuizStore, private readonly lessonsService: LessonsService) {}
+  constructor(
+    private readonly quizStore: QuizStore,
+    private readonly lessonsService: LessonsService,
+  ) {}
 
   @ApiOperation({ summary: 'Create lesson', description: 'Create a new lesson (requires authentication)' })
   @ApiBearerAuth()
@@ -31,7 +56,11 @@ export class LessonsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(AuthGuard, EnrolledGuard)
   @Get()
-  findAll(@Query('courseId') courseId: string, @Query('skip') skip?: string, @Query('take') take?: string) {
+  findAll(
+    @Query('courseId') courseId: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
     const s = skip ? parseInt(skip, 10) : 0;
     const t = take ? parseInt(take, 10) : 50;
     return this.lessonsService.listByCourse(courseId, s, t);
@@ -84,49 +113,41 @@ export class LessonsController {
     return this.lessonsService.remove(id);
   }
 
-  @ApiOperation({ summary: 'Generate quiz for lesson', description: 'Generate AI quiz for a lesson using long polling' })
+  @ApiOperation({
+    summary: 'Generate quiz for lesson',
+    description: 'Generate AI quiz for a lesson using long polling (wait/notify, no server polling loop)',
+  })
   @ApiResponse({ status: 200, description: 'Quiz generated successfully' })
   @ApiResponse({ status: 408, description: 'Quiz generation timeout' })
   @ApiResponse({ status: 500, description: 'Quiz generation failed' })
   @Post('quiz-generate')
-  async generateQuiz(@Body() body: any) {
+  async generateQuiz(@Body() body: any, @Res() res: Response) {
     const lessonId = await this.lessonsService.createQuiz(body);
 
     const maxWait = 120000;
-    const pollInterval = 2000;
-    const startTime = Date.now();
+    const payload = await this.quizStore.wait(lessonId, maxWait);
 
-    // long polling loop
-    while (true) {
-      const payload = await this.quizStore.get(lessonId);
-      console.log("payload: ", payload);
-
-      if (payload?.success) {
-        this.quizStore.delete(lessonId); // clear stored result after fetching
-
-        return {
-          status: "done",
-          tag: payload.tag,
-          quiz: payload.quizRaw
-        };
-      }
-
-      if (payload?.error) {
-        return {
-          status: "failed",
-          message: payload.error
-        };
-      }
-
-      if (Date.now() - startTime >= maxWait) {
-        return {
-          status: "timeout",
-          message: "Quiz still generating…"
-        };
-      }
-
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    if (!payload) {
+      return res.status(HttpStatus.REQUEST_TIMEOUT).json({
+        status: 'timeout',
+        message: 'Quiz still generating…',
+        lessonId,
+      });
     }
-  }
 
+    if ('error' in payload) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: 'failed',
+        message: payload.error,
+        lessonId,
+      });
+    }
+
+    return res.status(HttpStatus.OK).json({
+      status: 'done',
+      tag: payload.tag,
+      quiz: payload.quizRaw,
+      lessonId,
+    });
+  }
 }
